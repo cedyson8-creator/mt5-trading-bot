@@ -173,9 +173,19 @@ class TradeManager:
         order_type = mt5.ORDER_TYPE_BUY if signal == "buy" else mt5.ORDER_TYPE_SELL
         action = "BUY" if signal == "buy" else "SELL"
 
+        tick = mt5.symbol_info_tick(pair)
+        if tick is None:
+            self.logger.error(f"Failed to get tick for {pair}")
+            return
+
+        live_price = tick.ask if signal == "buy" else tick.bid
+        price_offset = live_price - price
+        live_sl = sl + price_offset
+        live_tp = tp + price_offset
+        self.logger.info(f"{pair} live={live_price} close={price} sl={live_sl} tp={live_tp}")
+
         filling_options = [mt5.ORDER_FILLING_FOK, mt5.ORDER_FILLING_IOC, 64]
         filling_mode = getattr(symbol_info, "filling_mode", 0)
-        self.logger.info(f"{pair} filling_mode={filling_mode}")
 
         if filling_mode & 1:
             filling_options.insert(0, mt5.ORDER_FILLING_IOC)
@@ -192,10 +202,10 @@ class TradeManager:
                 "symbol": pair,
                 "volume": lots,
                 "type": order_type,
-                "price": price,
-                "sl": sl,
-                "tp": tp,
-                "deviation": 10,
+                "price": live_price,
+                "sl": live_sl,
+                "tp": live_tp,
+                "deviation": 20,
                 "magic": 202406,
                 "comment": "MT5Bot",
                 "type_time": mt5.ORDER_TIME_GTC,
@@ -207,8 +217,8 @@ class TradeManager:
             last_err = result.comment if result else "unknown"
 
         if result and result.retcode == mt5.TRADE_RETCODE_DONE:
-            self.logger.info(f"[LIVE] {action} {pair} {lots} lots @ {price} | Ticket: {result.order}")
-            log_trade(f"LIVE_{action}", pair, lots, price, sl, tp, f"ticket={result.order}")
+            self.logger.info(f"[LIVE] {action} {pair} {lots} lots @ {live_price} | Ticket: {result.order}")
+            log_trade(f"LIVE_{action}", pair, lots, live_price, live_sl, live_tp, f"ticket={result.order}")
             if features and self.ml_model:
                 self.ml_model.record_open_trade(result.order, features, signal)
                 self.logger.info(f"ML feedback tracking started for ticket {result.order}")
