@@ -326,7 +326,7 @@ class MLTradingModel:
         )
 
         self.model = RandomForestClassifier(
-            n_estimators=200, max_depth=15, min_samples_leaf=10,
+            n_estimators=500, max_depth=20, min_samples_leaf=5,
             random_state=42, n_jobs=-1, class_weight="balanced",
         )
         self.model.fit(X_train, y_train)
