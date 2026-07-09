@@ -5,7 +5,7 @@ import MetaTrader5 as mt5
 from config import (
     CHECK_INTERVAL_SECONDS, HEARTBEAT_INTERVAL_MINUTES, PAIRS, TIMEFRAME,
     STRATEGY, ML_TRAINING_BARS, ML_TRAINING_INTERVAL_SECONDS,
-    TRAILING_CHECK_INTERVAL, MTF_ENABLED, MTF_HIGHER_TF,
+    TRAILING_CHECK_INTERVAL, MTF_ENABLED, MTF_HIGHER_TF, MTF_MIN_BARS,
 )
 from ml_model import extract_features
 from logger import get_logger
@@ -111,6 +111,7 @@ class Scheduler:
             if rates is None:
                 continue
 
+            higher_rates = None
             if MTF_ENABLED:
                 higher_tf = TF_MAP.get(MTF_HIGHER_TF, mt5.TIMEFRAME_H1)
                 higher_rates = self.connector.get_rates(pair, higher_tf, bars=MTF_MIN_BARS)
