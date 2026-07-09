@@ -54,6 +54,7 @@ ML_CONFIDENCE_THRESHOLD = 0.6   # Min probability to take a trade
 # --- ML Feedback (online learning) ---
 ML_FEEDBACK_FILE = "ml_feedback.pkl"
 ML_MAX_FEEDBACK = 2000          # Max feedback samples to keep
+ML_MAX_TRADE_AGE_HOURS = 4      # Auto-close stale tracked trades after N hours
 
 # --- Risk Management (Conservative) ---
 RISK_PER_TRADE = 0.04           # 4% risk per trade

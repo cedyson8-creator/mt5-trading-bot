@@ -249,7 +249,8 @@ class MLTradingModel:
         self._load_feedback()
 
     def record_open_trade(self, trade_id, features, signal):
-        self.open_trades[trade_id] = {"features": features, "signal": signal}
+        import time
+        self.open_trades[trade_id] = {"features": features, "signal": signal, "entry_time": time.time()}
 
     def close_trade(self, trade_id, profit):
         if trade_id not in self.open_trades:

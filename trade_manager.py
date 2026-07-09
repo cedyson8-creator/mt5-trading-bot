@@ -1,5 +1,6 @@
+import time
 import MetaTrader5 as mt5
-from config import DRY_RUN, STRATEGY
+from config import DRY_RUN, STRATEGY, ML_MAX_TRADE_AGE_HOURS
 from logger import get_logger, log_trade
 from risk_manager import check_spread, check_daily_loss, check_position_limits, calculate_sl_tp, calculate_position_size
 
@@ -27,18 +28,36 @@ class TradeManager:
         if positions:
             open_tickets = {p.ticket for p in positions}
 
+        now = time.time()
+        max_age_seconds = ML_MAX_TRADE_AGE_HOURS * 3600
+
         for trade_id in sorted(self.ml_model.open_trades.keys(), key=str):
             entry = self.ml_model.open_trades.get(trade_id)
             if not entry:
                 continue
 
+            entry_time = entry.get("entry_time", 0)
+            is_stale = (now - entry_time) > max_age_seconds if entry_time else False
+
             if isinstance(trade_id, int):
-                if trade_id in open_tickets:
+                if trade_id in open_tickets and not is_stale:
                     continue
-                history = mt5.history_deals_get(ticket=trade_id)
-                if history and len(history) > 0:
-                    profit = history[0].profit
-                    self.ml_model.close_trade(trade_id, profit)
+                if trade_id in open_tickets and is_stale:
+                    positions = self.connector.get_positions()
+                    for p in positions or []:
+                        if p.ticket == trade_id:
+                            profit = p.profit
+                            self.ml_model.close_trade(trade_id, profit)
+                            if profit >= 0:
+                                self.logger.info(f"ML auto-closed stale trade {trade_id} at profit ${profit:.2f}")
+                            break
+                    continue
+                if not is_stale:
+                    history = mt5.history_deals_get(ticket=trade_id)
+                    if history and len(history) > 0:
+                        profit = history[0].profit
+                        self.ml_model.close_trade(trade_id, profit)
+
             elif isinstance(trade_id, str) and trade_id.startswith("dry_"):
                 pair = entry.get("pair")
                 direction = entry.get("signal")
@@ -51,24 +70,41 @@ class TradeManager:
 
                 current_rates = self.connector.get_rates(pair, mt5.TIMEFRAME_M1, bars=2)
                 if current_rates is None or len(current_rates) < 2:
+                    if is_stale:
+                        self.ml_model.open_trades.pop(trade_id, None)
+                        self.logger.info(f"Removed stale dry-run trade {trade_id} (no data)")
                     continue
 
                 current_price = current_rates[-1][4]
 
+                hit = False
+                profit = 0
                 if direction == "buy":
                     if current_price >= tp:
-                        profit = abs(tp - price) * 10000 * 0.1
-                        self.ml_model.close_trade(trade_id, profit)
+                        profit = abs(tp - price)
+                        hit = True
                     elif current_price <= sl:
-                        profit = -abs(price - sl) * 10000 * 0.1
-                        self.ml_model.close_trade(trade_id, profit)
+                        profit = -abs(price - sl)
+                        hit = True
+                    elif is_stale:
+                        profit = (current_price - price)
+                        hit = True
                 elif direction == "sell":
                     if current_price <= tp:
-                        profit = abs(price - tp) * 10000 * 0.1
-                        self.ml_model.close_trade(trade_id, profit)
+                        profit = abs(price - tp)
+                        hit = True
                     elif current_price >= sl:
-                        profit = -abs(sl - price) * 10000 * 0.1
-                        self.ml_model.close_trade(trade_id, profit)
+                        profit = -abs(sl - price)
+                        hit = True
+                    elif is_stale:
+                        profit = (price - current_price)
+                        hit = True
+
+                if hit:
+                    profit_dollars = profit * 10000 * 0.1
+                    self.ml_model.close_trade(trade_id, profit_dollars)
+                    if is_stale:
+                        self.logger.info(f"ML auto-closed stale dry trade {trade_id} (P&L: ${profit_dollars:.2f})")
 
     def execute_signal(self, signal, pair, rates, features=None):
         if signal not in ("buy", "sell"):
