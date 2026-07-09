@@ -85,7 +85,7 @@ MAX_POSITIONS_PER_PAIR = 1
 
 # --- Scheduler ---
 CHECK_INTERVAL_SECONDS = 60    # Check for new signals every 60s
-ML_TRAINING_INTERVAL_SECONDS = 3600  # Retrain when enough new data
+ML_TRAINING_INTERVAL_SECONDS = 600  # Retrain every 10 min (was 3600)
 HEARTBEAT_INTERVAL_MINUTES = 60
 
 # --- Notifications (Telegram) ---

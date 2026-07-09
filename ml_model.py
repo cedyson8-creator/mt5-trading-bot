@@ -306,9 +306,15 @@ class MLTradingModel:
             fb_labels = [fb[1] for fb in self.feedback_buffer]
             fb_df = pd.DataFrame(fb_features)
             fb_df = fb_df.reindex(columns=X.columns, fill_value=0)
+
+            target_fb_ratio = 0.2
+            repeat = max(1, int(len(X) * target_fb_ratio / len(fb_df)))
+            fb_df = pd.concat([fb_df] * repeat, ignore_index=True)
+            fb_labels = fb_labels * repeat
+
             X = pd.concat([X, fb_df], ignore_index=True)
             y = y + fb_labels
-            self.logger.info(f"Added {len(fb_labels)} feedback samples ({fb_labels.count('buy')} buy, {fb_labels.count('sell')} sell)")
+            self.logger.info(f"Added {len(fb_labels)} feedback samples ({fb_labels.count('buy')} buy, {fb_labels.count('sell')} sell) — {repeat}x oversampled to {target_fb_ratio:.0%} of data")
 
         y_encoded = [self.label_encoder.get(label, 1) for label in y]
 
