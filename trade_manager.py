@@ -173,30 +173,39 @@ class TradeManager:
         order_type = mt5.ORDER_TYPE_BUY if signal == "buy" else mt5.ORDER_TYPE_SELL
         action = "BUY" if signal == "buy" else "SELL"
 
-        filling_mode = getattr(symbol_info, "filling_mode", 1)
+        filling_options = [mt5.ORDER_FILLING_FOK, mt5.ORDER_FILLING_IOC, 64]
+        filling_mode = getattr(symbol_info, "filling_mode", 0)
+        self.logger.info(f"{pair} filling_mode={filling_mode}")
+
+        if filling_mode & 1:
+            filling_options.insert(0, mt5.ORDER_FILLING_IOC)
         if filling_mode & 2:
-            type_filling = mt5.ORDER_FILLING_FOK
-        elif filling_mode & 1:
-            type_filling = mt5.ORDER_FILLING_IOC
-        else:
-            type_filling = mt5.ORDER_FILLING_FOK
+            filling_options.insert(0, mt5.ORDER_FILLING_FOK)
+        if filling_mode & 64:
+            filling_options.insert(0, 64)
 
-        request = {
-            "action": mt5.TRADE_ACTION_DEAL,
-            "symbol": pair,
-            "volume": lots,
-            "type": order_type,
-            "price": price,
-            "sl": sl,
-            "tp": tp,
-            "deviation": 10,
-            "magic": 202406,
-            "comment": "MT5Bot",
-            "type_time": mt5.ORDER_TIME_GTC,
-            "type_filling": type_filling,
-        }
+        result = None
+        last_err = None
+        for type_filling in filling_options:
+            request = {
+                "action": mt5.TRADE_ACTION_DEAL,
+                "symbol": pair,
+                "volume": lots,
+                "type": order_type,
+                "price": price,
+                "sl": sl,
+                "tp": tp,
+                "deviation": 10,
+                "magic": 202406,
+                "comment": "MT5Bot",
+                "type_time": mt5.ORDER_TIME_GTC,
+                "type_filling": type_filling,
+            }
+            result = mt5.order_send(request)
+            if result and result.retcode == mt5.TRADE_RETCODE_DONE:
+                break
+            last_err = result.comment if result else "unknown"
 
-        result = mt5.order_send(request)
         if result and result.retcode == mt5.TRADE_RETCODE_DONE:
             self.logger.info(f"[LIVE] {action} {pair} {lots} lots @ {price} | Ticket: {result.order}")
             log_trade(f"LIVE_{action}", pair, lots, price, sl, tp, f"ticket={result.order}")
@@ -204,8 +213,7 @@ class TradeManager:
                 self.ml_model.record_open_trade(result.order, features, signal)
                 self.logger.info(f"ML feedback tracking started for ticket {result.order}")
         else:
-            err = result.comment if result else "unknown"
-            self.logger.error(f"[LIVE] Order failed for {pair}: {err}")
+            self.logger.error(f"[LIVE] Order failed for {pair}: {last_err}")
 
     def update_trailing_stops(self):
         if DRY_RUN:
