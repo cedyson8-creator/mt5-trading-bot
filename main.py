@@ -7,6 +7,7 @@ from scheduler import Scheduler
 from ml_model import MLTradingModel
 from strategy_engine import set_ml_model
 from config import STRATEGY, PAIRS, TIMEFRAME, ML_TRAINING_BARS
+from api_server import start_api_server
 
 
 BANNER = """
@@ -70,6 +71,12 @@ if __name__ == "__main__":
         trade_manager.set_daily_balance(account["balance"])
 
         scheduler = Scheduler(connector, trade_manager, ml_model)
+
+        bot_ref = {"connector": connector, "trade_manager": trade_manager, "ml_model": ml_model}
+        try:
+            start_api_server(bot_ref, port=8080)
+        except Exception as e:
+            log.warning(f"API server not started: {e}")
 
         signal.signal(signal.SIGINT, signal_handler)
         if hasattr(signal, "SIGTERM"):

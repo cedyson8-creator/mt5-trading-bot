@@ -16,7 +16,7 @@ TIMEFRAME = mt5.TIMEFRAME_M5
 TIMEFRAME_STR = "M5"
 
 # --- Strategy ---
-STRATEGY = "ml"   # "sma_rsi" or "ml"
+STRATEGY = "ml"   # "sma_rsi", "ml", "bb_breakout", "macd_crossover"
 SMA_FAST = 50
 SMA_SLOW = 200
 RSI_PERIOD = 14
@@ -56,6 +56,23 @@ ML_FEEDBACK_FILE = "ml_feedback.pkl"
 ML_MAX_FEEDBACK = 2000          # Max feedback samples to keep
 ML_MAX_TRADE_AGE_HOURS = 4      # Auto-close stale tracked trades after N hours
 
+# --- Portfolio Rebalancing ---
+REBALANCE_ENABLED = True
+REBALANCE_WINDOW = 20           # Number of recent trades per pair to evaluate
+REBALANCE_MAX_RISK_MULT = 1.5   # Max risk multiplier for top performers
+REBALANCE_MIN_RISK_MULT = 0.3   # Min risk multiplier for poor performers
+
+# --- Multi-Timeframe Analysis ---
+MTF_ENABLED = True
+MTF_HIGHER_TF = "H1"           # Higher timeframe for trend filter (H1, H4, D1)
+MTF_TREND_SMA = 200
+MTF_MIN_BARS = 100
+
+# --- Trailing Stop Loss ---
+TRAILING_SL_ACTIVATION = 1.0   # Activate after profit exceeds this many ATR
+TRAILING_SL_DISTANCE = 1.0     # Trail SL this many ATR behind current price
+TRAILING_CHECK_INTERVAL = 5    # Check trails every N ticks (every 5 min)
+
 # --- Risk Management (Conservative) ---
 RISK_PER_TRADE = 0.04           # 4% risk per trade
 ATR_PERIOD = 14
@@ -70,6 +87,13 @@ MAX_POSITIONS_PER_PAIR = 1
 CHECK_INTERVAL_SECONDS = 60    # Check for new signals every 60s
 ML_TRAINING_INTERVAL_SECONDS = 3600  # Retrain when enough new data
 HEARTBEAT_INTERVAL_MINUTES = 60
+
+# --- Notifications (Telegram) ---
+TELEGRAM_ENABLED = False
+TELEGRAM_BOT_TOKEN = ""
+TELEGRAM_CHAT_ID = ""
+NOTIFY_ON_TRADE = True
+NOTIFY_ON_HEARTBEAT = False
 
 # --- Paths ---
 LOG_FILE = "mt5_bot.log"

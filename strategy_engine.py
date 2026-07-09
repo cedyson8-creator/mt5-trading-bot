@@ -6,6 +6,7 @@ from config import (
     MACD_FAST, MACD_SLOW, MACD_SIGNAL,
     BB_PERIOD, BB_STD,
     ADX_PERIOD, ADX_THRESHOLD,
+    MTF_ENABLED, MTF_TREND_SMA, MTF_MIN_BARS,
 )
 
 # Global ML model reference (set at startup)
@@ -102,6 +103,76 @@ def sma_rsi_signal(rates):
     return "hold"
 
 
+def bb_breakout_signal(rates):
+    closes = [r[4] for r in rates]
+    if len(closes) < BB_PERIOD + 1:
+        return "hold"
+
+    upper, middle, lower = _bollinger_bands(closes)
+    curr_close = closes[-1]
+    prev_close = closes[-2]
+    curr_upper = upper[-1]
+    curr_lower = lower[-1]
+    prev_upper = upper[-2]
+    prev_lower = lower[-2]
+
+    if np.isnan(curr_upper) or np.isnan(curr_lower):
+        return "hold"
+
+    if prev_close <= prev_upper and curr_close > curr_upper:
+        return "buy"
+    if prev_close >= prev_lower and curr_close < curr_lower:
+        return "sell"
+
+    return "hold"
+
+
+def macd_crossover_signal(rates):
+    closes = [r[4] for r in rates]
+    if len(closes) < MACD_SLOW + MACD_SIGNAL + 1:
+        return "hold"
+
+    macd_line, signal_line, hist = _macd(closes)
+
+    curr_macd = macd_line[-1]
+    curr_signal = signal_line[-1]
+    prev_macd = macd_line[-2]
+    prev_signal = signal_line[-2]
+
+    if np.isnan(curr_macd) or np.isnan(curr_signal):
+        return "hold"
+
+    if prev_macd <= prev_signal and curr_macd > curr_signal:
+        return "buy"
+    if prev_macd >= prev_signal and curr_macd < curr_signal:
+        return "sell"
+
+    return "hold"
+
+
+def mtf_filter(higher_rates, signal_dir):
+    if not MTF_ENABLED or higher_rates is None:
+        return True
+
+    closes = [r[4] for r in higher_rates]
+    if len(closes) < MTF_MIN_BARS:
+        return True
+
+    trend_sma = _sma(closes, MTF_TREND_SMA)
+    current_price = closes[-1]
+    trend_value = trend_sma[-1]
+
+    if np.isnan(trend_value):
+        return True
+
+    if signal_dir == "buy":
+        return current_price > trend_value
+    elif signal_dir == "sell":
+        return current_price < trend_value
+
+    return True
+
+
 # --- Indicator Filters ---
 
 def macd_filter(closes, signal_dir):
@@ -168,23 +239,28 @@ def adx_filter(highs, lows, closes, signal_dir):
     return True
 
 
-def generate_signal(rates):
+def generate_signal(rates, filtered=True):
     if STRATEGY == "ml":
         if _ml_model is None or not _ml_model.trained:
             return "hold"
-        signal, confidence = _ml_model.predict(rates)
+        signal, _ = _ml_model.predict(rates)
         return signal
-
-    if STRATEGY != "sma_rsi":
-        return "hold"
 
     closes = [r[4] for r in rates]
     highs = [r[2] for r in rates]
     lows = [r[3] for r in rates]
 
-    signal = sma_rsi_signal(rates)
-    if signal == "hold":
+    if STRATEGY == "sma_rsi":
+        signal = sma_rsi_signal(rates)
+    elif STRATEGY == "bb_breakout":
+        signal = bb_breakout_signal(rates)
+    elif STRATEGY == "macd_crossover":
+        signal = macd_crossover_signal(rates)
+    else:
         return "hold"
+
+    if signal == "hold" or not filtered:
+        return signal
 
     all_pass = (
         macd_filter(closes, signal)

@@ -1,14 +1,24 @@
 import time
 import threading
 from datetime import datetime
+import MetaTrader5 as mt5
 from config import (
     CHECK_INTERVAL_SECONDS, HEARTBEAT_INTERVAL_MINUTES, PAIRS, TIMEFRAME,
     STRATEGY, ML_TRAINING_BARS, ML_TRAINING_INTERVAL_SECONDS,
+    TRAILING_CHECK_INTERVAL, MTF_ENABLED, MTF_HIGHER_TF,
 )
 from ml_model import extract_features
 from logger import get_logger
-from strategy_engine import generate_signal
+from strategy_engine import generate_signal, mtf_filter
 from risk_manager import check_daily_loss
+from notifier import notify_heartbeat, notify_startup
+
+
+TF_MAP = {
+    "M1": mt5.TIMEFRAME_M1, "M5": mt5.TIMEFRAME_M5, "M15": mt5.TIMEFRAME_M15,
+    "M30": mt5.TIMEFRAME_M30, "H1": mt5.TIMEFRAME_H1, "H4": mt5.TIMEFRAME_H4,
+    "D1": mt5.TIMEFRAME_D1,
+}
 
 
 class Scheduler:
@@ -23,6 +33,8 @@ class Scheduler:
         self._heartbeat_interval_ticks = max(1, int((HEARTBEAT_INTERVAL_MINUTES * 60) / CHECK_INTERVAL_SECONDS))
         self._training_counter = 0
         self._training_interval_ticks = max(1, int(ML_TRAINING_INTERVAL_SECONDS / CHECK_INTERVAL_SECONDS))
+        self._trail_counter = 0
+        self._trail_interval_ticks = max(1, int(TRAILING_CHECK_INTERVAL * 60 / CHECK_INTERVAL_SECONDS))
         self._initial_tick = True
 
     def start(self):
@@ -30,6 +42,7 @@ class Scheduler:
         self._thread = threading.Thread(target=self._run_loop, daemon=True)
         self._thread.start()
         self.logger.info("Scheduler started — checking every {}s".format(CHECK_INTERVAL_SECONDS))
+        notify_startup()
 
     def stop(self):
         self.running = False
@@ -54,6 +67,11 @@ class Scheduler:
             self._heartbeat()
             self._heartbeat_counter = 0
 
+        self._trail_counter += 1
+        if self._trail_counter >= self._trail_interval_ticks:
+            self.trade_manager.update_trailing_stops()
+            self._trail_counter = 0
+
         if STRATEGY == "ml" and self.ml_model and self.ml_model.trained:
             self.trade_manager.process_closed_trades()
             self._training_counter += 1
@@ -65,10 +83,13 @@ class Scheduler:
 
     def _heartbeat(self):
         info = self.connector.get_account_summary()
+        positions = self.connector.get_positions()
+        open_count = len(positions) if positions else 0
         if info:
             self.logger.info(f"HEARTBEAT | Balance: {info['balance']:.2f} | "
                              f"Equity: {info['equity']:.2f} | "
-                             f"Open P&L: {info['profit']:.2f}")
+                             f"Open P&L: {info['profit']:.2f} | Positions: {open_count}")
+            notify_heartbeat(info["balance"], info["equity"], info["profit"], open_count)
         else:
             self.logger.info("HEARTBEAT | Running")
 
@@ -90,14 +111,22 @@ class Scheduler:
             if rates is None:
                 continue
 
+            if MTF_ENABLED:
+                higher_tf = TF_MAP.get(MTF_HIGHER_TF, mt5.TIMEFRAME_H1)
+                higher_rates = self.connector.get_rates(pair, higher_tf, bars=MTF_MIN_BARS)
+
             if STRATEGY == "ml" and self.ml_model:
                 signal, confidence = self.ml_model.predict(rates)
                 if signal != "hold":
+                    if not mtf_filter(higher_rates, signal):
+                        continue
                     self.logger.info(f"{pair} ML signal: {signal.upper()} ({confidence:.0%})")
                     feats = extract_features(rates)
                     self.trade_manager.execute_signal(signal, pair, rates, feats)
             else:
                 signal = generate_signal(rates)
                 if signal != "hold":
+                    if not mtf_filter(higher_rates, signal):
+                        continue
                     self.logger.info(f"{pair} signal: {signal.upper()}")
                     self.trade_manager.execute_signal(signal, pair, rates)

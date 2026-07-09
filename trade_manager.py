@@ -2,7 +2,8 @@ import time
 import MetaTrader5 as mt5
 from config import DRY_RUN, STRATEGY, ML_MAX_TRADE_AGE_HOURS
 from logger import get_logger, log_trade
-from risk_manager import check_spread, check_daily_loss, check_position_limits, calculate_sl_tp, calculate_position_size
+from risk_manager import check_spread, check_daily_loss, check_position_limits, calculate_sl_tp, calculate_position_size, _atr, calculate_trailing_sl
+from notifier import notify_trade_open, notify_trade_close
 
 
 class TradeManager:
@@ -142,7 +143,7 @@ class TradeManager:
             self.logger.warning(f"Daily loss limit reached ({account_info['equity']:.2f} vs start {self.daily_start_balance:.2f}), no new trades")
             return
 
-        lots = calculate_position_size(account_info["balance"], current_price, sl, symbol_info)
+        lots = calculate_position_size(account_info["balance"], current_price, sl, symbol_info, pair)
         if lots <= 0:
             self.logger.warning(f"Calculated lot size <= 0 for {pair}")
             return
@@ -151,6 +152,7 @@ class TradeManager:
             self._dry_run_trade(signal, pair, lots, current_price, sl, tp, features)
         else:
             self._live_trade(signal, pair, lots, current_price, sl, tp, symbol_info, features)
+        notify_trade_open(signal, pair, lots, current_price, sl, tp)
 
     def _dry_run_trade(self, signal, pair, lots, price, sl, tp, features=None):
         action = "BUY" if signal == "buy" else "SELL"
@@ -196,3 +198,53 @@ class TradeManager:
         else:
             err = result.comment if result else "unknown"
             self.logger.error(f"[LIVE] Order failed for {pair}: {err}")
+
+    def update_trailing_stops(self):
+        if DRY_RUN:
+            return
+        if not self.connector.is_connected():
+            return
+
+        positions = self.connector.get_positions()
+        if not positions:
+            return
+
+        for pos in positions:
+            try:
+                rates = self.connector.get_rates(pos.symbol, mt5.TIMEFRAME_M5, bars=50)
+                if rates is None or len(rates) < 20:
+                    continue
+
+                atr_val = _atr(rates)
+                if atr_val is None or atr_val == 0:
+                    continue
+
+                current_price = mt5.symbol_info_tick(pos.symbol).ask if pos.type == 0 else mt5.symbol_info_tick(pos.symbol).bid
+                if current_price is None or current_price == 0:
+                    continue
+
+                new_sl = calculate_trailing_sl(pos, current_price, atr_val)
+                if new_sl is None:
+                    continue
+
+                if pos.sl and abs(pos.sl - new_sl) / pos.sl < 0.0001:
+                    continue
+
+                request = {
+                    "action": mt5.TRADE_ACTION_SLTP,
+                    "symbol": pos.symbol,
+                    "position": pos.ticket,
+                    "sl": new_sl,
+                    "tp": pos.tp,
+                    "deviation": 10,
+                    "magic": 202406,
+                    "comment": "trail",
+                }
+                result = mt5.order_send(request)
+                if result and result.retcode == mt5.TRADE_RETCODE_DONE:
+                    self.logger.info(f"Trail SL {pos.symbol} ticket {pos.ticket}: {pos.sl} -> {new_sl}")
+                else:
+                    self.logger.warning(f"Trail SL failed for {pos.ticket}: {result.comment if result else 'unknown'}")
+
+            except Exception as e:
+                self.logger.error(f"Trailing stop error for {pos.symbol}: {e}")
