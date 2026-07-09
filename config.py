@@ -49,7 +49,7 @@ ML_LOOKAHEAD = 5                # Bars forward to label (25min on M5)
 ML_PROFIT_THRESHOLD = 1.5       # ATR multiplier for buy/sell labeling
 ML_RETRAIN_INTERVAL_HOURS = 24  # Retrain every N hours
 ML_MIN_SAMPLES = 500            # Minimum samples to train
-ML_CONFIDENCE_THRESHOLD = 0.6   # Min probability to take a trade
+ML_CONFIDENCE_THRESHOLD = 0.5   # Min probability to take a trade
 
 # --- ML Feedback (online learning) ---
 ML_FEEDBACK_FILE = "ml_feedback.pkl"
