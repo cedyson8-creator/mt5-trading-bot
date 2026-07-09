@@ -85,12 +85,9 @@ if __name__ == "__main__":
         scheduler.start()
 
         log.info("Bot is running. Press Ctrl+C to stop.")
-        try:
-            signal.pause() if hasattr(signal, "pause") else None
-        except AttributeError:
-            import time
-            while True:
-                time.sleep(1)
+        import time
+        while True:
+            time.sleep(1)
     else:
         log.error("Could not retrieve account info")
         connector.disconnect()
