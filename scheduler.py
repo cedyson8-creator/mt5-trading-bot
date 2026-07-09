@@ -1,21 +1,28 @@
 import time
 import threading
 from datetime import datetime
-from config import CHECK_INTERVAL_SECONDS, HEARTBEAT_INTERVAL_MINUTES, PAIRS, TIMEFRAME
+from config import (
+    CHECK_INTERVAL_SECONDS, HEARTBEAT_INTERVAL_MINUTES, PAIRS, TIMEFRAME,
+    STRATEGY, ML_TRAINING_BARS, ML_TRAINING_INTERVAL_SECONDS,
+)
 from logger import get_logger
 from strategy_engine import generate_signal
 from risk_manager import check_daily_loss
 
 
 class Scheduler:
-    def __init__(self, connector, trade_manager):
+    def __init__(self, connector, trade_manager, ml_model=None):
         self.connector = connector
         self.trade_manager = trade_manager
+        self.ml_model = ml_model
         self.logger = get_logger()
         self.running = False
         self._thread = None
         self._heartbeat_counter = 0
         self._heartbeat_interval_ticks = max(1, int((HEARTBEAT_INTERVAL_MINUTES * 60) / CHECK_INTERVAL_SECONDS))
+        self._training_counter = 0
+        self._training_interval_ticks = max(1, int(ML_TRAINING_INTERVAL_SECONDS / CHECK_INTERVAL_SECONDS))
+        self._initial_tick = True
 
     def start(self):
         self.running = True
@@ -46,6 +53,12 @@ class Scheduler:
             self._heartbeat()
             self._heartbeat_counter = 0
 
+        if STRATEGY == "ml" and self.ml_model and self.ml_model.trained:
+            self._training_counter += 1
+            if self._training_counter >= self._training_interval_ticks:
+                self._retrain_ml()
+                self._training_counter = 0
+
         self._check_and_trade()
 
     def _heartbeat(self):
@@ -56,6 +69,16 @@ class Scheduler:
                              f"Open P&L: {info['profit']:.2f}")
         else:
             self.logger.info("HEARTBEAT | Running")
+
+    def _retrain_ml(self):
+        self.logger.info("ML retrain cycle: fetching fresh data...")
+        all_rates = []
+        for pair in PAIRS:
+            rates = self.connector.get_rates(pair, TIMEFRAME, bars=ML_TRAINING_BARS)
+            if rates is not None and len(rates) > 500:
+                all_rates.extend(rates)
+        if len(all_rates) > 500:
+            self.ml_model.train(all_rates)
 
     def _check_and_trade(self):
         for pair in PAIRS:

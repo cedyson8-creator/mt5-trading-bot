@@ -4,6 +4,19 @@ from logger import setup_logger
 from mt5_connector import MT5Connector
 from trade_manager import TradeManager
 from scheduler import Scheduler
+from ml_model import MLTradingModel
+from strategy_engine import set_ml_model
+from config import STRATEGY, PAIRS, TIMEFRAME, ML_TRAINING_BARS
+
+
+BANNER = """
+███╗   ███╗████████╗███████╗    ██████╗  ██████╗ ████████╗
+████╗ ████║╚══██╔══╝██╔════╝    ██╔══██╗██╔═══██╗╚══██╔══╝
+██╔████╔██║   ██║   █████╗      ██████╔╝██║   ██║   ██║
+██║╚██╔╝██║   ██║   ██╔══╝      ██╔══██╗██║   ██║   ██║
+██║ ╚═╝ ██║   ██║   ███████╗    ██████╔╝╚██████╔╝   ██║
+╚═╝     ╚═╝   ╚═╝   ╚══════╝    ╚═════╝  ╚═════╝    ╚═╝
+"""
 
 
 def signal_handler(sig, frame):
@@ -13,11 +26,35 @@ def signal_handler(sig, frame):
     sys.exit(0)
 
 
+def setup_ml(connector):
+    model = MLTradingModel()
+    if model.load():
+        log.info(f"ML model loaded from disk (accuracy: {model.training_accuracy:.2%})")
+    else:
+        log.info("No saved ML model found. Training on historical data...")
+        all_rates = []
+        for pair in PAIRS:
+            rates = connector.get_rates(pair, TIMEFRAME, bars=ML_TRAINING_BARS)
+            if rates is not None and len(rates) > 500:
+                all_rates.extend(rates)
+                log.info(f"  {pair}: {len(rates)} bars loaded")
+        if len(all_rates) > 500:
+            model.train(all_rates)
+            if model.trained:
+                log.info("ML model trained successfully")
+            else:
+                log.warning("ML model training failed — falling back to hold")
+        else:
+            log.warning("Not enough data to train ML model")
+    set_ml_model(model)
+    return model
+
+
 if __name__ == "__main__":
     log = setup_logger()
 
-    log.info("=" * 50)
-    log.info("MT5 Multi-Pair Trading Bot Starting")
+    print(BANNER)
+    log.info("MT5 Multi-Pair Trading Bot — ML Enhanced")
     log.info("=" * 50)
 
     connector = MT5Connector()
@@ -27,10 +64,12 @@ if __name__ == "__main__":
 
     account = connector.get_account_summary()
     if account:
+        ml_model = setup_ml(connector) if STRATEGY == "ml" else None
+
         trade_manager = TradeManager(connector)
         trade_manager.set_daily_balance(account["balance"])
 
-        scheduler = Scheduler(connector, trade_manager)
+        scheduler = Scheduler(connector, trade_manager, ml_model)
 
         signal.signal(signal.SIGINT, signal_handler)
         if hasattr(signal, "SIGTERM"):

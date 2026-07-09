@@ -16,7 +16,7 @@ TIMEFRAME = mt5.TIMEFRAME_M5
 TIMEFRAME_STR = "M5"
 
 # --- Strategy ---
-STRATEGY = "sma_rsi"
+STRATEGY = "ml"   # "sma_rsi" or "ml"
 SMA_FAST = 50
 SMA_SLOW = 200
 RSI_PERIOD = 14
@@ -41,18 +41,29 @@ BB_STD = 2.0
 ADX_PERIOD = 14
 ADX_THRESHOLD = 25
 
+# --- Machine Learning ---
+ML_MODEL_FILE = "ml_model.pkl"
+ML_FEATURES_FILE = "ml_features.csv"
+ML_TRAINING_BARS = 5000         # Bars used for training
+ML_LOOKAHEAD = 5                # Bars forward to label (25min on M5)
+ML_PROFIT_THRESHOLD = 1.5       # ATR multiplier for buy/sell labeling
+ML_RETRAIN_INTERVAL_HOURS = 24  # Retrain every N hours
+ML_MIN_SAMPLES = 500            # Minimum samples to train
+ML_CONFIDENCE_THRESHOLD = 0.6   # Min probability to take a trade
+
 # --- Risk Management (Conservative) ---
-RISK_PER_TRADE = 0.02           # 2% risk per trade
+RISK_PER_TRADE = 0.04           # 4% risk per trade
 ATR_PERIOD = 14
 ATR_SL_MULTIPLIER = 2.0        # SL = 2 * ATR
 RR_RATIO = 2.0                 # TP = 2 * risk (2:1 reward:risk)
 MAX_SPREAD_PIPS = 30
-MAX_DAILY_LOSS_PCT = 5.0       # Stop trading if down 5% in a day
+MAX_DAILY_LOSS_PCT = 50.0       # Stop trading if down 50% in a day
 MAX_CONCURRENT_POSITIONS = 10
 MAX_POSITIONS_PER_PAIR = 1
 
 # --- Scheduler ---
 CHECK_INTERVAL_SECONDS = 60    # Check for new signals every 60s
+ML_TRAINING_INTERVAL_SECONDS = 3600  # Retrain when enough new data
 HEARTBEAT_INTERVAL_MINUTES = 60
 
 # --- Paths ---

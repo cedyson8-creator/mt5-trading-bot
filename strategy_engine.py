@@ -8,6 +8,13 @@ from config import (
     ADX_PERIOD, ADX_THRESHOLD,
 )
 
+# Global ML model reference (set at startup)
+_ml_model = None
+
+def set_ml_model(model):
+    global _ml_model
+    _ml_model = model
+
 
 def _sma(data, period):
     return pd.Series(data).rolling(window=period).mean().values
@@ -162,6 +169,12 @@ def adx_filter(highs, lows, closes, signal_dir):
 
 
 def generate_signal(rates):
+    if STRATEGY == "ml":
+        if _ml_model is None or not _ml_model.trained:
+            return "hold"
+        signal, confidence = _ml_model.predict(rates)
+        return signal
+
     if STRATEGY != "sma_rsi":
         return "hold"
 
