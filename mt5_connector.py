@@ -17,6 +17,19 @@ class MT5Connector:
                 time.sleep(retry_delay)
                 continue
 
+            terminal = mt5.terminal_info()
+            info = mt5.account_info()
+
+            if info and info.login == MT5_LOGIN:
+                self.account_info = info
+                self.connected = True
+                self.logger.info(f"Connected to MT5 — Account: {self.account_info.login}, "
+                                 f"Balance: {self.account_info.balance:.2f}, "
+                                 f"Leverage: 1:{self.account_info.leverage}")
+                if terminal and not terminal.trade_allowed:
+                    self.logger.warning("Algo Trading is disabled in this MT5 session")
+                return True
+
             authorized = mt5.login(MT5_LOGIN, password=MT5_PASSWORD, server=MT5_SERVER)
             if not authorized:
                 self.logger.error(f"MT5 login failed (attempt {attempt}/{max_retries}): {mt5.last_error()}")
