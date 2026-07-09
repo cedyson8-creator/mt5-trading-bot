@@ -106,6 +106,7 @@ class Scheduler:
             self.ml_model.train_with_feedback(all_rates)
 
     def _check_and_trade(self):
+        traded = False
         for pair in PAIRS:
             rates = self.connector.get_rates(pair, TIMEFRAME, bars=500)
             if rates is None:
@@ -124,6 +125,7 @@ class Scheduler:
                     self.logger.info(f"{pair} ML signal: {signal.upper()} ({confidence:.0%})")
                     feats = extract_features(rates)
                     self.trade_manager.execute_signal(signal, pair, rates, feats)
+                    traded = True
             else:
                 signal = generate_signal(rates)
                 if signal != "hold":
@@ -131,3 +133,7 @@ class Scheduler:
                         continue
                     self.logger.info(f"{pair} signal: {signal.upper()}")
                     self.trade_manager.execute_signal(signal, pair, rates)
+                    traded = True
+
+        if not traded:
+            self.logger.info("Signal check complete — no trades this cycle")
