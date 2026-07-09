@@ -7,6 +7,7 @@ from sklearn.metrics import accuracy_score, precision_score
 from config import (
     ML_MODEL_FILE, ML_LOOKAHEAD, ML_PROFIT_THRESHOLD,
     ML_MIN_SAMPLES, ML_CONFIDENCE_THRESHOLD, ATR_PERIOD,
+    ML_FEEDBACK_FILE, ML_MAX_FEEDBACK,
 )
 from logger import get_logger
 
@@ -243,9 +244,54 @@ class MLTradingModel:
         self.trained = False
         self.training_accuracy = 0
         self.feature_names = None
+        self.feedback_buffer = []
+        self.open_trades = {}
+        self._load_feedback()
 
-    def train(self, rates):
-        self.logger.info("Building ML feature matrix...")
+    def record_open_trade(self, trade_id, features, signal):
+        self.open_trades[trade_id] = {"features": features, "signal": signal}
+
+    def close_trade(self, trade_id, profit):
+        if trade_id not in self.open_trades:
+            return
+        entry = self.open_trades.pop(trade_id)
+        entry_signal = entry["signal"]
+        features = entry["features"]
+
+        if profit > 0:
+            feedback_label = entry_signal
+        else:
+            feedback_label = "sell" if entry_signal == "buy" else "buy"
+
+        self.feedback_buffer.append((features, feedback_label))
+        if len(self.feedback_buffer) > ML_MAX_FEEDBACK:
+            self.feedback_buffer = self.feedback_buffer[-ML_MAX_FEEDBACK:]
+        self._save_feedback()
+        self.logger.info(f"ML feedback: {entry_signal} -> {feedback_label} (profit: ${profit:.2f})")
+
+    def feedback_count(self):
+        return len(self.feedback_buffer)
+
+    def _load_feedback(self):
+        import pickle
+        if os.path.exists(ML_FEEDBACK_FILE):
+            try:
+                with open(ML_FEEDBACK_FILE, "rb") as f:
+                    self.feedback_buffer = pickle.load(f)
+                self.logger.info(f"Loaded {len(self.feedback_buffer)} feedback samples")
+            except Exception:
+                self.feedback_buffer = []
+
+    def _save_feedback(self):
+        import pickle
+        try:
+            with open(ML_FEEDBACK_FILE, "wb") as f:
+                pickle.dump(self.feedback_buffer, f)
+        except Exception as e:
+            self.logger.error(f"Failed to save feedback: {e}")
+
+    def train_with_feedback(self, rates):
+        self.logger.info("Building ML feature matrix (with feedback)...")
         X, y = build_feature_matrix(rates)
 
         if len(X) < ML_MIN_SAMPLES:
@@ -253,9 +299,19 @@ class MLTradingModel:
             return False
 
         self.feature_names = list(X.columns)
+
+        if self.feedback_buffer:
+            fb_features = [fb[0] for fb in self.feedback_buffer]
+            fb_labels = [fb[1] for fb in self.feedback_buffer]
+            fb_df = pd.DataFrame(fb_features)
+            fb_df = fb_df.reindex(columns=X.columns, fill_value=0)
+            X = pd.concat([X, fb_df], ignore_index=True)
+            y = y + fb_labels
+            self.logger.info(f"Added {len(fb_labels)} feedback samples ({fb_labels.count('buy')} buy, {fb_labels.count('sell')} sell)")
+
         y_encoded = [self.label_encoder.get(label, 1) for label in y]
 
-        self.logger.info(f"Training ML model on {len(X)} samples...")
+        self.logger.info(f"Training ML model on {len(X)} total samples...")
         self.logger.info(f"Distribution: buy={y.count('buy')} hold={y.count('hold')} sell={y.count('sell')}")
 
         X_train, X_test, y_train, y_test = train_test_split(
@@ -304,6 +360,7 @@ class MLTradingModel:
     def save(self):
         import joblib
         joblib.dump({"model": self.model, "accuracy": self.training_accuracy}, ML_MODEL_FILE)
+        self._save_feedback()
         self.logger.info(f"ML model saved to {ML_MODEL_FILE}")
 
     def load(self):

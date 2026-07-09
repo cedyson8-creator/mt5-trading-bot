@@ -1,5 +1,6 @@
 .env
 *.log
 *.csv
+*.pkl
 __pycache__/
 *.pyc

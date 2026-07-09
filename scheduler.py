@@ -5,6 +5,7 @@ from config import (
     CHECK_INTERVAL_SECONDS, HEARTBEAT_INTERVAL_MINUTES, PAIRS, TIMEFRAME,
     STRATEGY, ML_TRAINING_BARS, ML_TRAINING_INTERVAL_SECONDS,
 )
+from ml_model import extract_features
 from logger import get_logger
 from strategy_engine import generate_signal
 from risk_manager import check_daily_loss
@@ -54,6 +55,7 @@ class Scheduler:
             self._heartbeat_counter = 0
 
         if STRATEGY == "ml" and self.ml_model and self.ml_model.trained:
+            self.trade_manager.process_closed_trades()
             self._training_counter += 1
             if self._training_counter >= self._training_interval_ticks:
                 self._retrain_ml()
@@ -78,7 +80,9 @@ class Scheduler:
             if rates is not None and len(rates) > 500:
                 all_rates.extend(rates)
         if len(all_rates) > 500:
-            self.ml_model.train(all_rates)
+            fb_count = self.ml_model.feedback_count()
+            self.logger.info(f"Retraining with {fb_count} feedback samples")
+            self.ml_model.train_with_feedback(all_rates)
 
     def _check_and_trade(self):
         for pair in PAIRS:
@@ -86,7 +90,14 @@ class Scheduler:
             if rates is None:
                 continue
 
-            signal = generate_signal(rates)
-            if signal != "hold":
-                self.logger.info(f"{pair} signal: {signal.upper()}")
-                self.trade_manager.execute_signal(signal, pair, rates)
+            if STRATEGY == "ml" and self.ml_model:
+                signal, confidence = self.ml_model.predict(rates)
+                if signal != "hold":
+                    self.logger.info(f"{pair} ML signal: {signal.upper()} ({confidence:.0%})")
+                    feats = extract_features(rates)
+                    self.trade_manager.execute_signal(signal, pair, rates, feats)
+            else:
+                signal = generate_signal(rates)
+                if signal != "hold":
+                    self.logger.info(f"{pair} signal: {signal.upper()}")
+                    self.trade_manager.execute_signal(signal, pair, rates)

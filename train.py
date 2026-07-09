@@ -31,7 +31,7 @@ if len(all_rates) < 500:
 log.info(f"Total bars across all pairs: {len(all_rates)}")
 
 model = MLTradingModel()
-model.train(all_rates)
+model.train_with_feedback(all_rates)
 
 if model.trained:
     log.info("=" * 50)

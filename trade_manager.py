@@ -1,19 +1,76 @@
 import MetaTrader5 as mt5
-from config import DRY_RUN
+from config import DRY_RUN, STRATEGY
 from logger import get_logger, log_trade
 from risk_manager import check_spread, check_daily_loss, check_position_limits, calculate_sl_tp, calculate_position_size
 
 
 class TradeManager:
-    def __init__(self, connector):
+    def __init__(self, connector, ml_model=None):
         self.connector = connector
+        self.ml_model = ml_model
         self.logger = get_logger()
         self.daily_start_balance = None
+        self._last_check_time = 0
 
     def set_daily_balance(self, balance):
         self.daily_start_balance = balance
 
-    def execute_signal(self, signal, pair, rates):
+    def set_ml_model(self, ml_model):
+        self.ml_model = ml_model
+
+    def process_closed_trades(self):
+        if not self.ml_model or not self.ml_model.open_trades:
+            return
+
+        open_tickets = set()
+        positions = self.connector.get_positions()
+        if positions:
+            open_tickets = {p.ticket for p in positions}
+
+        for trade_id in sorted(self.ml_model.open_trades.keys(), key=str):
+            entry = self.ml_model.open_trades.get(trade_id)
+            if not entry:
+                continue
+
+            if isinstance(trade_id, int):
+                if trade_id in open_tickets:
+                    continue
+                history = mt5.history_deals_get(ticket=trade_id)
+                if history and len(history) > 0:
+                    profit = history[0].profit
+                    self.ml_model.close_trade(trade_id, profit)
+            elif isinstance(trade_id, str) and trade_id.startswith("dry_"):
+                pair = entry.get("pair")
+                direction = entry.get("signal")
+                price = entry.get("price")
+                sl = entry.get("sl")
+                tp = entry.get("tp")
+
+                if not pair:
+                    continue
+
+                current_rates = self.connector.get_rates(pair, mt5.TIMEFRAME_M1, bars=2)
+                if current_rates is None or len(current_rates) < 2:
+                    continue
+
+                current_price = current_rates[-1][4]
+
+                if direction == "buy":
+                    if current_price >= tp:
+                        profit = abs(tp - price) * 10000 * 0.1
+                        self.ml_model.close_trade(trade_id, profit)
+                    elif current_price <= sl:
+                        profit = -abs(price - sl) * 10000 * 0.1
+                        self.ml_model.close_trade(trade_id, profit)
+                elif direction == "sell":
+                    if current_price <= tp:
+                        profit = abs(price - tp) * 10000 * 0.1
+                        self.ml_model.close_trade(trade_id, profit)
+                    elif current_price >= sl:
+                        profit = -abs(sl - price) * 10000 * 0.1
+                        self.ml_model.close_trade(trade_id, profit)
+
+    def execute_signal(self, signal, pair, rates, features=None):
         if signal not in ("buy", "sell"):
             return
 
@@ -55,17 +112,26 @@ class TradeManager:
             return
 
         if DRY_RUN:
-            self._dry_run_trade(signal, pair, lots, current_price, sl, tp)
+            self._dry_run_trade(signal, pair, lots, current_price, sl, tp, features)
         else:
-            self._live_trade(signal, pair, lots, current_price, sl, tp, symbol_info)
+            self._live_trade(signal, pair, lots, current_price, sl, tp, symbol_info, features)
 
-    def _dry_run_trade(self, signal, pair, lots, price, sl, tp):
+    def _dry_run_trade(self, signal, pair, lots, price, sl, tp, features=None):
         action = "BUY" if signal == "buy" else "SELL"
         msg = f"[DRY-RUN] {action} {pair} {lots} lots @ {price} SL:{sl} TP:{tp}"
         self.logger.info(msg)
         log_trade(f"DRY_{action}", pair, lots, price, sl, tp)
+        import uuid
+        tid = f"dry_{uuid.uuid4().hex[:8]}"
+        if features and self.ml_model:
+            self.ml_model.record_open_trade(tid, features, signal)
+            if hasattr(self.ml_model, 'open_trades') and tid in self.ml_model.open_trades:
+                self.ml_model.open_trades[tid].update({
+                    "price": price, "sl": sl, "tp": tp, "pair": pair
+                })
+            self.logger.info(f"ML feedback tracking started for {tid} (dry-run)")
 
-    def _live_trade(self, signal, pair, lots, price, sl, tp, symbol_info):
+    def _live_trade(self, signal, pair, lots, price, sl, tp, symbol_info, features=None):
         order_type = mt5.ORDER_TYPE_BUY if signal == "buy" else mt5.ORDER_TYPE_SELL
         action = "BUY" if signal == "buy" else "SELL"
 
@@ -88,6 +154,9 @@ class TradeManager:
         if result and result.retcode == mt5.TRADE_RETCODE_DONE:
             self.logger.info(f"[LIVE] {action} {pair} {lots} lots @ {price} | Ticket: {result.order}")
             log_trade(f"LIVE_{action}", pair, lots, price, sl, tp, f"ticket={result.order}")
+            if features and self.ml_model:
+                self.ml_model.record_open_trade(result.order, features, signal)
+                self.logger.info(f"ML feedback tracking started for ticket {result.order}")
         else:
             err = result.comment if result else "unknown"
             self.logger.error(f"[LIVE] Order failed for {pair}: {err}")

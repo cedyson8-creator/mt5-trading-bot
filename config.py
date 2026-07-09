@@ -51,6 +51,10 @@ ML_RETRAIN_INTERVAL_HOURS = 24  # Retrain every N hours
 ML_MIN_SAMPLES = 500            # Minimum samples to train
 ML_CONFIDENCE_THRESHOLD = 0.6   # Min probability to take a trade
 
+# --- ML Feedback (online learning) ---
+ML_FEEDBACK_FILE = "ml_feedback.pkl"
+ML_MAX_FEEDBACK = 2000          # Max feedback samples to keep
+
 # --- Risk Management (Conservative) ---
 RISK_PER_TRADE = 0.04           # 4% risk per trade
 ATR_PERIOD = 14

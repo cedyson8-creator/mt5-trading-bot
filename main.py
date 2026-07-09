@@ -39,7 +39,7 @@ def setup_ml(connector):
                 all_rates.extend(rates)
                 log.info(f"  {pair}: {len(rates)} bars loaded")
         if len(all_rates) > 500:
-            model.train(all_rates)
+            model.train_with_feedback(all_rates)
             if model.trained:
                 log.info("ML model trained successfully")
             else:
@@ -66,7 +66,7 @@ if __name__ == "__main__":
     if account:
         ml_model = setup_ml(connector) if STRATEGY == "ml" else None
 
-        trade_manager = TradeManager(connector)
+        trade_manager = TradeManager(connector, ml_model)
         trade_manager.set_daily_balance(account["balance"])
 
         scheduler = Scheduler(connector, trade_manager, ml_model)
