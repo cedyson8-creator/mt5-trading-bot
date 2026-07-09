@@ -173,6 +173,14 @@ class TradeManager:
         order_type = mt5.ORDER_TYPE_BUY if signal == "buy" else mt5.ORDER_TYPE_SELL
         action = "BUY" if signal == "buy" else "SELL"
 
+        filling_mode = getattr(symbol_info, "filling_mode", 1)
+        if filling_mode & 2:
+            type_filling = mt5.ORDER_FILLING_FOK
+        elif filling_mode & 1:
+            type_filling = mt5.ORDER_FILLING_IOC
+        else:
+            type_filling = mt5.ORDER_FILLING_FOK
+
         request = {
             "action": mt5.TRADE_ACTION_DEAL,
             "symbol": pair,
@@ -185,7 +193,7 @@ class TradeManager:
             "magic": 202406,
             "comment": "MT5Bot",
             "type_time": mt5.ORDER_TIME_GTC,
-            "type_filling": mt5.ORDER_FILLING_IOC,
+            "type_filling": type_filling,
         }
 
         result = mt5.order_send(request)
