@@ -1,5 +1,6 @@
 import signal
 import sys
+import MetaTrader5 as mt5
 from logger import setup_logger
 from mt5_connector import MT5Connector
 from trade_manager import TradeManager
@@ -62,6 +63,14 @@ if __name__ == "__main__":
     if not connector.connect():
         log.error("Failed to connect to MT5. Exiting.")
         sys.exit(1)
+
+    terminal = mt5.terminal_info()
+    if terminal and not terminal.trade_allowed:
+        log.warning("=" * 60)
+        log.warning("ALGO TRADING IS DISABLED! Open MT5 -> Ctrl+O -> Expert Advisors")
+        log.warning("Check 'Allow Automated Trading' AND click the 'Algo Trading' button")
+        log.warning("at the top toolbar until it turns GREEN. Then restart the bot.")
+        log.warning("=" * 60)
 
     account = connector.get_account_summary()
     if account:
