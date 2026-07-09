@@ -16,14 +16,15 @@ class BotAPI(BaseHTTPRequestHandler):
         self.wfile.write(json.dumps(data, default=str).encode())
 
     def do_GET(self):
-        if self.path == "/status":
-            self._handle_status()
-        elif self.path == "/trades":
-            self._handle_trades()
-        elif self.path == "/model":
-            self._handle_model()
-        elif self.path == "/config":
-            self._handle_config()
+        path_map = {
+            "/status": self._handle_status,
+            "/trades": self._handle_trades,
+            "/model": self._handle_model,
+            "/config": self._handle_config,
+        }
+        handler = path_map.get(self.path)
+        if handler:
+            handler()
         else:
             self._json({"error": "not found"}, 404)
 
@@ -34,46 +35,51 @@ class BotAPI(BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.end_headers()
 
+    def _get_bot(self):
+        return BotAPI.bot_ref or {}
+
     def _handle_status(self):
-        bot = BotAPI.bot_ref
-        if not bot:
-            self._json({"status": "no reference"})
-            return
-        info = bot.get("connector", lambda: None)()
-        if info and callable(info):
-            info = info()
-        account = bot.get("trade_manager", lambda: None)()
-        if account and callable(account):
-            account = None
+        bot = self._get_bot()
+        connector = bot.get("connector")
+        account = None
+        positions = []
+        connected = False
+        if connector:
+            try:
+                account = connector.get_account_summary()
+                connected = connector.is_connected()
+                positions = connector.get_positions() or []
+            except Exception:
+                pass
+
         self._json({
-            "status": "running",
+            "status": "running" if connected else "disconnected",
             "strategy": STRATEGY,
             "pairs": PAIRS,
+            "account": account,
+            "open_positions": len(positions),
         })
 
     def _handle_trades(self):
         try:
             with open("trade_journal.csv", "r") as f:
                 lines = f.readlines()
-            rows = [line.strip().split(",") for line in lines[-50:]]
-            self._json({"trades": rows})
-        except FileNotFoundError:
+            header = lines[0].strip().split(",") if lines else []
+            rows = [line.strip().split(",") for line in lines[-51:]]
+            self._json({"header": header, "trades": rows})
+        except (FileNotFoundError, IndexError):
             self._json({"trades": []})
 
     def _handle_model(self):
-        bot = BotAPI.bot_ref
-        if not bot:
-            self._json({"model": None})
-            return
-        ml = bot.get("ml_model")
-        if ml and ml.trained:
-            imp = ml.get_feature_importance()
+        ml = self._get_bot().get("ml_model")
+        if ml and getattr(ml, "trained", False):
+            imp = ml.get_feature_importance() if hasattr(ml, "get_feature_importance") else {}
             top = dict(list(imp.items())[:10]) if imp else {}
             self._json({
                 "trained": True,
-                "accuracy": ml.training_accuracy,
-                "feedback_samples": len(ml.feedback_buffer),
-                "open_tracked_trades": len(ml.open_trades),
+                "accuracy": round(ml.training_accuracy, 4),
+                "feedback_samples": len(getattr(ml, "feedback_buffer", [])),
+                "open_tracked_trades": len(getattr(ml, "open_trades", {})),
                 "top_features": top,
             })
         else:
@@ -107,5 +113,5 @@ def start_api_server(bot_ref, port=8080):
     server = HTTPServer(("0.0.0.0", port), BotAPI)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
-    get_logger().info(f"API server started on port {port}")
+    get_logger().info(f"API server running at http://localhost:{port}")
     return server
