@@ -152,7 +152,7 @@ def build_feature_matrix(rates):
                 window = closes[i - p : i + 1]
                 row[f"volatility_{p}"] = np.std(window) / np.mean(window) if np.mean(window) else 0
 
-            row["hl_range"] = (highs[i] - lows[i]) / closes[i] if closes[i] else 0
+        row["hl_range"] = (highs[i] - lows[i]) / closes[i] if closes[i] else 0
         if i >= 4:
             row["hl_range_5"] = (np.max(highs[i-4:i+1]) - np.min(lows[i-4:i+1])) / np.mean(closes[i-4:i+1]) if np.mean(closes[i-4:i+1]) else 0
 
