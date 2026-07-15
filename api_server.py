@@ -516,7 +516,7 @@ async function refresh() {
   const feedbackCount = model.feedback_samples ?? status.self_learning?.feedback_samples ?? 0;
   setText("mlValue", model.trained ? `Trained (${(model.accuracy * 100).toFixed(1)}%) • ${feedbackCount} feedback` : `Not trained • ${feedbackCount} feedback`);
   setText("pairsValue", Array.isArray(status.pairs) ? status.pairs.join(", ") : "—");
-  setText("flagsValue", `Mode: ${modeText(dryRun)}\nLive unlock: ${config.allow_live_trading ? "enabled" : "disabled"}\nAPI server: ${config.api_enabled ? "enabled" : "disabled"}`);
+  setText("flagsValue", `Mode: ${modeText(dryRun)}\nLive unlock: ${config.allow_live_trading ? "enabled" : "disabled"}\nAuto retrain: ${config.auto_retrain_enabled ? "enabled" : "disabled"}\nAPI server: ${config.api_enabled ? "enabled" : "disabled"}`);
   const pill = document.getElementById("modePill");
   pill.className = modeClass(dryRun);
   pill.textContent = modeText(dryRun);
@@ -743,7 +743,7 @@ setInterval(refresh, 5000);
         from config import (
             TIMEFRAME_STR, RISK_PER_TRADE, ATR_PERIOD,
             RR_RATIO, MAX_CONCURRENT_POSITIONS, MAX_DAILY_LOSS_PCT,
-            ML_CONFIDENCE_THRESHOLD, DRY_RUN, ALLOW_LIVE_TRADING, ENABLE_API_SERVER,
+            ML_CONFIDENCE_THRESHOLD, DRY_RUN, ALLOW_LIVE_TRADING, ENABLE_API_SERVER, AUTO_RETRAIN_ENABLED,
         )
         self._json({
             "pairs": config.PAIRS,
@@ -758,6 +758,7 @@ setInterval(refresh, 5000);
             "dry_run": DRY_RUN,
             "allow_live_trading": ALLOW_LIVE_TRADING,
             "api_enabled": ENABLE_API_SERVER,
+            "auto_retrain_enabled": AUTO_RETRAIN_ENABLED,
         })
 
     def log_message(self, format, *args):

@@ -65,7 +65,7 @@ class Scheduler:
             self.trade_manager.update_trailing_stops()
             self._trail_counter = 0
 
-        if config.STRATEGY == "ml" and self.ml_model and self.ml_model.trained:
+        if config.AUTO_RETRAIN_ENABLED and config.STRATEGY == "ml" and self.ml_model and self.ml_model.trained:
             self.trade_manager.process_closed_trades()
             self._training_counter += 1
             if self._training_counter >= self._training_interval_ticks:

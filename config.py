@@ -112,6 +112,7 @@ MAX_POSITIONS_PER_PAIR = 1
 CHECK_INTERVAL_SECONDS = 60    # Check for new signals every 60s
 ML_TRAINING_INTERVAL_SECONDS = 600  # Retrain every 10 min (was 3600)
 HEARTBEAT_INTERVAL_MINUTES = 60
+AUTO_RETRAIN_ENABLED = os.getenv("AUTO_RETRAIN_ENABLED", "true").lower() == "true"
 
 # --- Notifications (Telegram) ---
 TELEGRAM_ENABLED = False

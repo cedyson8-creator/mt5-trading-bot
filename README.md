@@ -63,6 +63,8 @@ Launchers:
 - Live: `.\run_live.ps1` or `run_live.bat`
 - Dry-run: `.\run_dry.ps1` or `run_dry.bat`
 - Background: `.\run_background.ps1 -Mode live` or `run_background.bat live`
+- Watchdog: `.\watchdog.ps1 -Mode live` or `watchdog.bat live`
+- Autostart: `.\create_autostart.ps1 -Mode live`
 - Symbols only: `.\run_symbols.ps1` or `run_symbols.bat`
 
 Branding assets:
@@ -75,6 +77,7 @@ Production:
 - Read `PRODUCTION_RUNBOOK.md` before going live.
 - If you enable the API server, open `http://127.0.0.1:8080/` in a browser to use the dashboard and mode toggle.
 - The dashboard now includes live KPI tiles, a trade activity chart, and an emergency stop button.
+- For fully automatic startup and crash recovery, use the watchdog launcher and autostart shortcut.
 
 ## Symbol files
 

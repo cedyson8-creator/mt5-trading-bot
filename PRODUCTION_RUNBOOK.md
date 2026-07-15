@@ -57,6 +57,13 @@ If you want the bot to run without a visible terminal:
 .\run_background.ps1 -Mode live
 ```
 
+For crash recovery and boot persistence:
+
+```powershell
+.\watchdog.ps1 -Mode live
+.\create_autostart.ps1 -Mode live
+```
+
 ## 4. Preflight before every live launch
 
 Run:
@@ -134,7 +141,18 @@ The local dashboard can switch between demo and live mode at runtime.
 - The dashboard should be bound to `127.0.0.1`
 - Treat the toggle as an operator convenience, not an excuse to skip preflight
 
-## 12. Emergency stop
+## 12. Full automation mode
+
+This project can run unattended after startup:
+
+- `watchdog.ps1` restarts the bot if it crashes
+- `create_autostart.ps1` places a shortcut in the Windows Startup folder
+- `AUTO_RETRAIN_ENABLED=true` keeps ML retraining scheduled
+- the scheduler already reconnects MT5 automatically when the terminal drops
+
+Use this only after a stable demo burn-in and a small live pilot.
+
+## 13. Emergency stop
 
 The dashboard includes an emergency stop button. It:
 
