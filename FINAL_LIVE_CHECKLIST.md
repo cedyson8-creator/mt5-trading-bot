@@ -46,6 +46,7 @@ Use this checklist immediately before turning on real trading.
 - [ ] `create_autostart.ps1 -Mode live` has been run if you want boot startup
 - [ ] `remove_autostart.ps1` is available for rollback
 - [ ] `setup_pc.ps1 -Mode live -DesktopShortcut -EnableAutostart` has been run on fresh machines
+- [ ] `first_run.ps1` has been used to verify install and demo preflight on first boot
 
 ## Live launch
 

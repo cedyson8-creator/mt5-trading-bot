@@ -37,7 +37,17 @@ If you want the script to install Python packages and create launch shortcuts in
 
 Then edit `.env` and run the checklist.
 
-## Option 3: Release package
+## Option 3: Guided first run
+
+If this is a fresh PC and you want the bot to walk you through the basics:
+
+```powershell
+.\first_run.ps1
+```
+
+It will install, list symbols, and run demo preflight before telling you what to do next.
+
+## Option 4: Release package
 
 1. On the build machine, run:
 
