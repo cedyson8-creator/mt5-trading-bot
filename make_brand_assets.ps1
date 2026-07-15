@@ -282,11 +282,11 @@ function New-IconArt {
 
     try {
         $fullRect = New-Object System.Drawing.Rectangle 0, 0, $Size, $Size
-        $bgPath = New-RoundedRectPath -Rect (New-Object System.Drawing.Rectangle 8, 8, ($Size - 16), ($Size - 16)) -Radius 48
+        $bgPath = New-RoundedRectPath -Rect (New-Object System.Drawing.Rectangle 10, 10, ($Size - 20), ($Size - 20)) -Radius 54
         $bgBrush = New-Object System.Drawing.Drawing2D.LinearGradientBrush(
             $fullRect,
-            [System.Drawing.Color]::FromArgb(255, 11, 18, 33),
-            [System.Drawing.Color]::FromArgb(255, 12, 57, 78),
+            [System.Drawing.Color]::FromArgb(255, 11, 19, 34),
+            [System.Drawing.Color]::FromArgb(255, 13, 49, 72),
             45
         )
         try {
@@ -295,42 +295,84 @@ function New-IconArt {
             $bgBrush.Dispose()
         }
 
-        $innerGlow = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(28, 100, 255, 190))
+        $glowTop = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(45, 255, 204, 122))
+        $glowLeft = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(28, 79, 209, 197))
         try {
-            $g.FillEllipse($innerGlow, 40, 36, 176, 176)
+            $g.FillEllipse($glowTop, 42, 22, 110, 110)
+            $g.FillEllipse($glowLeft, 20, 110, 118, 118)
         } finally {
-            $innerGlow.Dispose()
+            $glowTop.Dispose()
+            $glowLeft.Dispose()
         }
 
-        $frame = New-Object System.Drawing.Pen ([System.Drawing.Color]::FromArgb(100, 255, 255, 255)), 2
+        $frame = New-Object System.Drawing.Pen ([System.Drawing.Color]::FromArgb(112, 255, 255, 255)), 2
         try {
             $g.DrawPath($frame, $bgPath)
         } finally {
             $frame.Dispose()
         }
 
-        Draw-Grid -Graphics $g -Width $Size -Height $Size -Spacing 32 -Color ([System.Drawing.Color]::FromArgb(18, 160, 220, 255))
-
-        Draw-Candles -Graphics $g -BaseX 54 -BaseY 178 -Scale 1
-
-        $pathPoints = @(
-            (New-Object System.Drawing.Point 38, 184),
-            (New-Object System.Drawing.Point 64, 170),
-            (New-Object System.Drawing.Point 84, 132),
-            (New-Object System.Drawing.Point 114, 143),
-            (New-Object System.Drawing.Point 140, 104),
-            (New-Object System.Drawing.Point 166, 118),
-            (New-Object System.Drawing.Point 194, 84),
-            (New-Object System.Drawing.Point 216, 94)
+        $badgeRect = New-Object System.Drawing.Rectangle 36, 36, 184, 184
+        $badgeBrush = New-Object System.Drawing.Drawing2D.LinearGradientBrush(
+            $badgeRect,
+            [System.Drawing.Color]::FromArgb(255, 11, 23, 41),
+            [System.Drawing.Color]::FromArgb(255, 22, 62, 92),
+            45
         )
-        Draw-LineGraph -Graphics $g -Points $pathPoints -Color ([System.Drawing.Color]::FromArgb(255, 119, 255, 188)) -Thickness 5
-        Draw-LineGraph -Graphics $g -Points $pathPoints -Color ([System.Drawing.Color]::FromArgb(120, 255, 255, 255)) -Thickness 2
-
-        $orbit = New-Object System.Drawing.Pen ([System.Drawing.Color]::FromArgb(80, 255, 255, 255)), 2
         try {
-            $g.DrawEllipse($orbit, 28, 28, 200, 200)
+            $g.FillEllipse($badgeBrush, $badgeRect)
         } finally {
-            $orbit.Dispose()
+            $badgeBrush.Dispose()
+        }
+
+        $badgeRing = New-Object System.Drawing.Pen ([System.Drawing.Color]::FromArgb(120, 125, 211, 252)), 3
+        try {
+            $g.DrawEllipse($badgeRing, $badgeRect)
+        } finally {
+            $badgeRing.Dispose()
+        }
+
+        $innerRing = New-Object System.Drawing.Pen ([System.Drawing.Color]::FromArgb(65, 255, 204, 122)), 2
+        try {
+            $g.DrawEllipse($innerRing, 52, 52, 164, 164)
+        } finally {
+            $innerRing.Dispose()
+        }
+
+        $linePen = New-Object System.Drawing.Pen ([System.Drawing.Color]::FromArgb(235, 119, 255, 188)), 5
+        $linePen.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
+        $linePen.EndCap = [System.Drawing.Drawing2D.LineCap]::Round
+        $linePen.LineJoin = [System.Drawing.Drawing2D.LineJoin]::Round
+        try {
+            $linePoints = @(
+                (New-Object System.Drawing.Point 58, 175),
+                (New-Object System.Drawing.Point 86, 161),
+                (New-Object System.Drawing.Point 114, 132),
+                (New-Object System.Drawing.Point 145, 144),
+                (New-Object System.Drawing.Point 173, 108),
+                (New-Object System.Drawing.Point 206, 119)
+            )
+            $g.DrawLines($linePen, $linePoints)
+        } finally {
+            $linePen.Dispose()
+        }
+
+        $brandFont = New-Object System.Drawing.Font("Segoe UI", 46, [System.Drawing.FontStyle]::Bold)
+        $subFont = New-Object System.Drawing.Font("Segoe UI", 14, [System.Drawing.FontStyle]::Regular)
+        $brandBrush = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(255, 229, 238, 251))
+        $subBrush = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(255, 159, 179, 200))
+        try {
+            $brandText = "MT5"
+            $brandSize = $g.MeasureString($brandText, $brandFont)
+            $g.DrawString($brandText, $brandFont, $brandBrush, [int](($Size - $brandSize.Width) / 2), 90)
+            $subText = "TRADING BOT"
+            $subSize = $g.MeasureString($subText, $subFont)
+            $g.DrawString($subText, $subFont, $subBrush, [int](($Size - $subSize.Width) / 2), 144)
+        } finally {
+            $brandFont.Dispose()
+            $subFont.Dispose()
+            $brandBrush.Dispose()
+            $subBrush.Dispose()
         }
 
         Save-Png -Bitmap $bmp -Path $PngPath
