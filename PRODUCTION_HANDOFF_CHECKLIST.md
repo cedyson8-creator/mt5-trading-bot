@@ -2,6 +2,17 @@
 
 Use this at the machine immediately before live trading.
 
+This build is configured for:
+
+- Symbols: `EURUSD`, `GBPUSD`, `USDJPY`
+- Timeframe: `M5`
+- Strategy mode: `ml`
+- Risk per trade: `4%`
+- Max spread: `30` pips
+- Max concurrent positions: `10`
+- Max positions per pair: `1`
+- Local API host: `127.0.0.1:8080`
+
 ## Before you start
 
 - [ ] You are on the correct Windows PC
@@ -19,11 +30,15 @@ Use this at the machine immediately before live trading.
 - [ ] `MT5_LOGIN` is correct
 - [ ] `MT5_PASSWORD` is correct
 - [ ] `MT5_SERVER` is correct
+- [ ] `MT5_SERVER` is a live server, not demo
 - [ ] `ENABLE_API_SERVER=false` unless you need the dashboard
 - [ ] `API_HOST=127.0.0.1`
 - [ ] `API_PORT=8080`
-- [ ] Symbol basket is correct
-- [ ] `pairs.txt` is correct
+- [ ] Symbol basket matches `pairs.txt`
+- [ ] `pairs.txt` contains only:
+  - [ ] `EURUSD`
+  - [ ] `GBPUSD`
+  - [ ] `USDJPY`
 
 ## MT5 safety
 
@@ -38,6 +53,7 @@ Use this at the machine immediately before live trading.
 - [ ] `.\run_symbols.ps1` passes
 - [ ] `python preflight.py --live` passes
 - [ ] `.\run_dry.ps1` passes
+- [ ] `ALLOW_LIVE_TRADING=false` was used for the first validation passes
 - [ ] Dashboard loads at `http://127.0.0.1:8080/` if enabled
 - [ ] No unexpected warnings are present
 
@@ -54,6 +70,7 @@ Use this at the machine immediately before live trading.
 - [ ] Start with the smallest practical size
 - [ ] Watch the first live trade manually
 - [ ] Confirm SL and TP are correct
+- [ ] Confirm the first trade is one of `EURUSD`, `GBPUSD`, or `USDJPY`
 - [ ] Confirm the journal is logging correctly
 - [ ] Confirm the bot is on the expected account
 
