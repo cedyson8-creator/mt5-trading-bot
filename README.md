@@ -114,6 +114,36 @@ Production:
 - backfills missing closes from MT5 history
 - writes `mt5_bot.log`, `trade_journal.csv`, `open_trades_snapshot.json`, `ml_model.pkl`, and `ml_feedback.pkl`
 
+## Trading flow
+
+```text
+Market data
+   ↓
+Signal step
+   ↓
+ML confirmation
+   ↓
+Trend filter
+   ↓
+Risk checks
+   ↓
+Place trade
+```
+
+In code, that maps roughly to:
+
+- `Scheduler` pulls data and requests a decision
+- `strategy_engine.generate_signal()` or `MLTradingModel.predict()` creates the signal
+- `mtf_filter()` checks the higher-timeframe trend
+- `risk_manager` checks spread, SL/TP, size, daily loss, and limits
+- `TradeManager.execute_signal()` sends the final order through MT5
+
+Rule of thumb:
+
+- signal says what to do
+- ML says how confident it is
+- risk decides whether the trade is allowed
+
 ## Safety
 
 - Test with a demo account first.
