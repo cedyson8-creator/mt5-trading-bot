@@ -1,6 +1,7 @@
 import argparse
 import signal
 import sys
+import threading
 import MetaTrader5 as mt5
 import config
 from runtime_options import resolve_runtime_options, format_symbol_listing
@@ -28,6 +29,7 @@ log = None
 connector = None
 scheduler = None
 trade_manager = None
+stop_event = None
 
 
 def signal_handler(sig, frame):
@@ -41,6 +43,8 @@ def signal_handler(sig, frame):
         scheduler.stop()
     if connector:
         connector.disconnect()
+    if stop_event:
+        stop_event.set()
     sys.exit(0)
 
 
@@ -92,6 +96,7 @@ if __name__ == "__main__":
     log.info(f"MT5 Multi-Pair Trading Bot — ML Enhanced [{mode}]")
     log.info(f"Trading pairs: {', '.join(runtime_pairs)}")
     log.info("=" * 50)
+    stop_event = threading.Event()
 
     ok, msg = validate_trading_config(dry_run=runtime_dry_run)
     if not ok:
@@ -140,7 +145,8 @@ if __name__ == "__main__":
 
         scheduler = Scheduler(connector, trade_manager, ml_model)
 
-        bot_ref = {"connector": connector, "trade_manager": trade_manager, "ml_model": ml_model}
+        bot_ref = {"connector": connector, "trade_manager": trade_manager, "ml_model": ml_model, "stop_event": stop_event}
+        bot_ref["scheduler"] = scheduler
         if config.ENABLE_API_SERVER:
             try:
                 start_api_server(bot_ref, port=config.API_PORT)
@@ -158,13 +164,21 @@ if __name__ == "__main__":
         log.info("Bot is running. Press Ctrl+C to stop.")
         import time
         try:
-            while True:
+            while not stop_event.is_set():
                 time.sleep(1)
         finally:
             try:
                 trade_manager.write_open_trades_snapshot()
             except Exception as e:
                 log.warning(f"Failed to write final snapshot: {e}")
+            try:
+                scheduler.stop()
+            except Exception:
+                pass
+            try:
+                connector.disconnect()
+            except Exception:
+                pass
     else:
         log.error("Could not retrieve account info")
         connector.disconnect()

@@ -74,6 +74,7 @@ Production:
 
 - Read `PRODUCTION_RUNBOOK.md` before going live.
 - If you enable the API server, open `http://127.0.0.1:8080/` in a browser to use the dashboard and mode toggle.
+- The dashboard now includes live KPI tiles, a trade activity chart, and an emergency stop button.
 
 ## Symbol files
 

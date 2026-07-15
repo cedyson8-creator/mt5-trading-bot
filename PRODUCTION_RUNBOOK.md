@@ -134,6 +134,17 @@ The local dashboard can switch between demo and live mode at runtime.
 - The dashboard should be bound to `127.0.0.1`
 - Treat the toggle as an operator convenience, not an excuse to skip preflight
 
+## 12. Emergency stop
+
+The dashboard includes an emergency stop button. It:
+
+- writes the open-trades snapshot
+- stops the scheduler
+- disconnects MT5
+- requests process shutdown through the main loop
+
+Use it when you need to stop the bot immediately, then verify open positions directly in MT5.
+
 ## 10. Recommended operating rule
 
 Treat this as a supervised trading system, not a fully unattended one. Keep a person responsible for checking it.

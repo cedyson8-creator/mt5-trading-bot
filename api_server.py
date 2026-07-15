@@ -51,6 +51,9 @@ class BotAPI(BaseHTTPRequestHandler):
         if self.path == "/mode":
             self._handle_mode_update()
             return
+        if self.path == "/emergency-stop":
+            self._handle_emergency_stop()
+            return
         self._json({"error": "not found"}, 404)
 
     def do_OPTIONS(self):
@@ -107,6 +110,33 @@ class BotAPI(BaseHTTPRequestHandler):
       flex-wrap:wrap;
       margin-bottom: 18px;
     }
+    .sidebar {
+      flex: 0 0 220px;
+      background: linear-gradient(180deg, rgba(14, 24, 40, .96), rgba(10, 18, 31, .96));
+      border:1px solid var(--panel-border);
+      border-radius:20px;
+      padding:18px;
+      box-shadow: var(--shadow);
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      min-width: 220px;
+    }
+    .nav-title { font-size: 12px; text-transform:uppercase; letter-spacing:.08em; color:#8da5c4; margin-bottom:6px; }
+    .nav-item {
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:center;
+      padding:10px 12px;
+      border-radius:12px;
+      background: rgba(255,255,255,.03);
+      color: var(--text);
+      text-decoration:none;
+      font-size: 13px;
+    }
+    .nav-item:hover { background: rgba(255,255,255,.06); }
+    .nav-kicker { color: var(--muted); font-size: 12px; }
     .hero {
       flex: 1 1 520px;
       background: linear-gradient(135deg, rgba(15,28,48,.94), rgba(13,23,37,.94));
@@ -203,16 +233,53 @@ class BotAPI(BaseHTTPRequestHandler):
       font-size: 12px;
     }
     .split { display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-top:16px; }
+    .chart-card { margin-top:16px; }
+    .chart-wrap {
+      width: 100%;
+      overflow-x:auto;
+      background: rgba(5, 10, 18, .45);
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.05);
+      padding: 12px;
+    }
+    .chart { width: 100%; min-height: 220px; }
+    .small { font-size: 12px; color: var(--muted); }
+    .kpi-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:12px; margin-top:12px; }
+    .kpi {
+      background: rgba(255,255,255,.03);
+      border-radius: 14px;
+      padding: 12px;
+      border:1px solid rgba(255,255,255,.05);
+    }
+    .kpi .label { margin-bottom: 6px; }
+    .kpi .value { font-size: 20px; }
+    .emergency {
+      width:100%;
+      background: linear-gradient(135deg, #ff5a5a, #ff3030);
+      color: white;
+      border: 1px solid rgba(255,255,255,.10);
+      box-shadow: 0 10px 28px rgba(255, 50, 50, .28);
+    }
     @media (max-width: 820px) {
       .split { grid-template-columns: 1fr; }
       .hero, .statusbox { flex-basis: 100%; }
+      .sidebar { flex-basis: 100%; }
     }
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="topbar">
-      <div class="hero">
+      <aside class="sidebar">
+        <div class="nav-title">Navigation</div>
+        <a class="nav-item" href="#overview">Overview <span class="nav-kicker">status</span></a>
+        <a class="nav-item" href="#chart">Activity <span class="nav-kicker">trades</span></a>
+        <a class="nav-item" href="#pairs">Pairs <span class="nav-kicker">basket</span></a>
+        <a class="nav-item" href="#logs">Logs <span class="nav-kicker">journal</span></a>
+        <a class="nav-item" href="#controls">Controls <span class="nav-kicker">mode</span></a>
+      </aside>
+
+      <div class="hero" id="overview">
         <div class="brandline">
           <div class="logo">⟠</div>
           <div>
@@ -239,6 +306,7 @@ class BotAPI(BaseHTTPRequestHandler):
           <button id="modeButton" class="primary" onclick="toggleMode()">Loading...</button>
           <button class="ghost" onclick="refresh()">Refresh</button>
         </div>
+        <button class="emergency" onclick="emergencyStop()">Emergency Stop</button>
       </div>
     </div>
 
@@ -265,18 +333,32 @@ class BotAPI(BaseHTTPRequestHandler):
       </div>
     </div>
 
+    <div class="card chart-card" id="chart">
+      <div class="label">Trade Activity</div>
+      <div class="small">Recent closed-trade P&amp;L and balance trend from the journal.</div>
+      <div class="kpi-grid">
+        <div class="kpi"><div class="label">Today P/L</div><div id="todayPl" class="value">—</div></div>
+        <div class="kpi"><div class="label">Closed Trades</div><div id="closedTrades" class="value">—</div></div>
+        <div class="kpi"><div class="label">Win Rate</div><div id="winRate" class="value">—</div></div>
+        <div class="kpi"><div class="label">Open P/L</div><div id="openPl" class="value">—</div></div>
+      </div>
+      <div class="chart-wrap">
+        <svg id="activityChart" class="chart" viewBox="0 0 900 240" preserveAspectRatio="none" role="img" aria-label="Trade activity chart"></svg>
+      </div>
+    </div>
+
     <div class="split space">
-      <div class="card">
+      <div class="card" id="pairs">
         <div class="label">Pairs</div>
         <pre id="pairsValue">—</pre>
       </div>
-      <div class="card">
+      <div class="card" id="controls">
         <div class="label">Runtime Flags</div>
         <pre id="flagsValue">—</pre>
       </div>
     </div>
 
-    <div class="card space">
+    <div class="card space" id="logs">
       <div class="label">Recent Trades</div>
       <div style="overflow:auto;">
         <table>
@@ -321,6 +403,96 @@ function modeClass(dryRun) {
   return dryRun ? "pill warn" : "pill ok";
 }
 
+function parseTradeJournal(tradesPayload) {
+  const header = Array.isArray(tradesPayload.header) ? tradesPayload.header : [];
+  const rows = Array.isArray(tradesPayload.trades) ? tradesPayload.trades : [];
+  const index = name => header.indexOf(name);
+  const columns = {
+    timestamp: index("timestamp"),
+    pair: index("pair"),
+    status: index("status"),
+    profit: index("profit"),
+    balance: index("balance"),
+    action: index("action"),
+    ticket: index("ticket"),
+  };
+
+  return rows.map(row => ({
+    row,
+    timestamp: columns.timestamp >= 0 ? row[columns.timestamp] : "",
+    pair: columns.pair >= 0 ? row[columns.pair] : "",
+    status: columns.status >= 0 ? String(row[columns.status] || "") : "",
+    profit: columns.profit >= 0 ? Number(row[columns.profit] || 0) : 0,
+    balance: columns.balance >= 0 ? Number(row[columns.balance] || 0) : 0,
+  }));
+}
+
+function escapeXml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+function renderActivityChart(items) {
+  const svg = document.getElementById("activityChart");
+  const width = 900;
+  const height = 240;
+  const padding = 22;
+  const innerWidth = width - (padding * 2);
+  const innerHeight = height - (padding * 2);
+  const closed = items.filter(item => item.status.toUpperCase() === "CLOSE");
+  const source = closed.length ? closed : items;
+  const values = source.map((item, idx) => {
+    if (item.balance) return item.balance;
+    return source.slice(0, idx + 1).reduce((sum, current) => sum + current.profit, 0);
+  });
+
+  if (!values.length) {
+    svg.innerHTML = `<text x="24" y="40" fill="#98adca">No trade activity yet</text>`;
+    return;
+  }
+
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const span = (max - min) || 1;
+  const step = source.length > 1 ? innerWidth / (source.length - 1) : innerWidth;
+
+  const points = values.map((value, idx) => {
+    const x = padding + (idx * step);
+    const y = padding + innerHeight - (((value - min) / span) * innerHeight);
+    return { x, y, value };
+  });
+
+  const linePath = points.map((point, idx) => `${idx === 0 ? "M" : "L"} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(" ");
+  const areaPath = `${linePath} L ${points[points.length - 1].x.toFixed(1)} ${height - padding} L ${points[0].x.toFixed(1)} ${height - padding} Z`;
+  const last = points[points.length - 1];
+  const first = points[0];
+  const labels = [
+    { x: padding, y: 18, text: `Start: ${Number(first.value).toFixed(2)}` },
+    { x: width - 200, y: 18, text: `Latest: ${Number(last.value).toFixed(2)}` },
+  ];
+
+  svg.innerHTML = `
+    <defs>
+      <linearGradient id="areaFill" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0%" stop-color="#66e9b2" stop-opacity="0.28" />
+        <stop offset="100%" stop-color="#66e9b2" stop-opacity="0.02" />
+      </linearGradient>
+      <linearGradient id="lineStroke" x1="0" x2="1">
+        <stop offset="0%" stop-color="#66e9b2" />
+        <stop offset="100%" stop-color="#7ea9ff" />
+      </linearGradient>
+    </defs>
+    <rect x="0" y="0" width="${width}" height="${height}" rx="16" fill="rgba(5,10,18,.08)"></rect>
+    ${labels.map(label => `<text x="${label.x}" y="${label.y}" fill="#98adca" font-size="12">${escapeXml(label.text)}</text>`).join("")}
+    <path d="${areaPath}" fill="url(#areaFill)"></path>
+    <path d="${linePath}" fill="none" stroke="url(#lineStroke)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+    ${points.map(point => `<circle cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="3.8" fill="#e7effb"></circle>`).join("")}
+  `;
+}
+
 async function refresh() {
   let status, config, model, trades;
   try {
@@ -337,6 +509,7 @@ async function refresh() {
 
   const dryRun = !!config.dry_run;
   const connected = status.status === "running";
+  const journal = parseTradeJournal(trades);
   setText("connectionState", connected ? "Connected" : "Disconnected");
   setText("balanceValue", status.account ? `${Number(status.account.balance).toFixed(2)} / ${Number(status.account.equity).toFixed(2)}` : "—");
   setText("positionsValue", String(status.open_positions ?? 0));
@@ -356,6 +529,21 @@ async function refresh() {
   button.className = dryRun ? "primary" : "danger";
   button.disabled = false;
   setNotice(connected ? "Dashboard synced." : "MT5 is disconnected. Check the terminal, account, and credentials.", connected ? "ok" : "warn");
+
+  const closedTrades = journal.filter(item => item.status.toUpperCase() === "CLOSE");
+  const closedProfits = closedTrades.map(item => item.profit);
+  const wins = closedProfits.filter(value => value > 0).length;
+  const today = new Date().toDateString();
+  const todayPl = closedTrades.reduce((sum, item) => {
+    const stamp = item.timestamp ? new Date(item.timestamp) : null;
+    return sum + ((stamp && stamp.toDateString() === today) ? item.profit : 0);
+  }, 0);
+  setText("todayPl", `${todayPl >= 0 ? "+" : ""}${todayPl.toFixed(2)}`);
+  setText("closedTrades", String(closedTrades.length));
+  setText("winRate", closedTrades.length ? `${((wins / closedTrades.length) * 100).toFixed(1)}%` : "—");
+  setText("openPl", status.account ? `${Number(status.account.profit).toFixed(2)}` : "—");
+
+  renderActivityChart(journal.slice(-24));
 
   const body = document.getElementById("tradesBody");
   const rows = Array.isArray(trades.trades) ? trades.trades.slice(-10).reverse() : [];
@@ -391,6 +579,21 @@ async function toggleMode() {
     return;
   }
   setNotice(`Mode switched to ${data.mode}.`, "ok");
+  await refresh();
+}
+
+async function emergencyStop() {
+  const proceed = confirm("Emergency stop will stop the scheduler and disconnect MT5. It will not close open positions. Continue?");
+  if (!proceed) {
+    return;
+  }
+  const res = await fetch("/emergency-stop", { method: "POST" });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    setNotice(data.error || "Emergency stop failed", "bad");
+    return;
+  }
+  setNotice("Emergency stop requested. Refreshing state...", "warn");
   await refresh();
 }
 
@@ -445,6 +648,43 @@ setInterval(refresh, 5000);
             "ok": True,
             "dry_run": config.DRY_RUN,
             "mode": "DEMO" if config.DRY_RUN else "LIVE",
+        })
+
+    def _handle_emergency_stop(self):
+        bot = self._get_bot()
+        scheduler = bot.get("scheduler")
+        connector = bot.get("connector")
+        trade_manager = bot.get("trade_manager")
+        stop_event = bot.get("stop_event")
+
+        if trade_manager and hasattr(trade_manager, "write_open_trades_snapshot"):
+            try:
+                trade_manager.write_open_trades_snapshot()
+            except Exception as exc:
+                get_logger().warning(f"Emergency stop snapshot failed: {exc}")
+
+        if scheduler and hasattr(scheduler, "stop"):
+            try:
+                scheduler.stop()
+            except Exception as exc:
+                get_logger().warning(f"Emergency stop scheduler stop failed: {exc}")
+
+        if connector and hasattr(connector, "disconnect"):
+            try:
+                connector.disconnect()
+            except Exception as exc:
+                get_logger().warning(f"Emergency stop disconnect failed: {exc}")
+
+        if stop_event and hasattr(stop_event, "set"):
+            try:
+                stop_event.set()
+            except Exception:
+                pass
+
+        get_logger().warning("Emergency stop triggered from dashboard")
+        self._json({
+            "ok": True,
+            "message": "Emergency stop requested. The bot process will exit.",
         })
 
     def _handle_status(self):
