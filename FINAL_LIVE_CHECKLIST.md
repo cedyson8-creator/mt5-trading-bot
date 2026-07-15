@@ -45,6 +45,7 @@ Use this checklist immediately before turning on real trading.
 - [ ] `watchdog.ps1` is configured if you want auto-restart
 - [ ] `create_autostart.ps1 -Mode live` has been run if you want boot startup
 - [ ] `remove_autostart.ps1` is available for rollback
+- [ ] `setup_pc.ps1 -Mode live -DesktopShortcut -EnableAutostart` has been run on fresh machines
 
 ## Live launch
 

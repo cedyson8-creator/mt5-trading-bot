@@ -28,6 +28,12 @@ Install:
 .\install_pc.ps1
 ```
 
+One-step setup:
+
+```bash
+.\setup_pc.ps1 -Mode live -DesktopShortcut -EnableAutostart
+```
+
 Preflight:
 
 ```bash
@@ -60,6 +66,7 @@ python main.py --list-symbols --pairs-file pairs.txt
 Launchers:
 
 - Install: `.\install_pc.ps1` or `install_pc.bat`
+- Setup: `.\setup_pc.ps1` or `setup_pc.bat`
 - Live: `.\run_live.ps1` or `run_live.bat`
 - Dry-run: `.\run_dry.ps1` or `run_dry.bat`
 - Background: `.\run_background.ps1 -Mode live` or `run_background.bat live`

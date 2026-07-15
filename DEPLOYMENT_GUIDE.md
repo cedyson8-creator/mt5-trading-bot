@@ -27,7 +27,17 @@ python preflight.py --live
 .\run_live.ps1
 ```
 
-## Option 2: Release package
+## Option 2: One-step setup
+
+If you want the script to install Python packages and create launch shortcuts in one pass:
+
+```powershell
+.\setup_pc.ps1 -Mode live -DesktopShortcut -EnableAutostart
+```
+
+Then edit `.env` and run the checklist.
+
+## Option 3: Release package
 
 1. On the build machine, run:
 
