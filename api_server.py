@@ -161,6 +161,48 @@ class BotAPI(BaseHTTPRequestHandler):
       --button-refresh: rgba(236, 229, 216, .95);
       --button-refresh-border: rgba(130,110,70,.10);
     }
+    body.theme-live .sidebar,
+    body.theme-live .hero,
+    body.theme-live .statusbox,
+    body.theme-live .card {
+      box-shadow: 0 18px 44px rgba(112, 78, 24, 0.12);
+    }
+    body.theme-live .sidebar {
+      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(247,240,228,.94));
+      border-color: rgba(170, 138, 84, 0.18);
+    }
+    body.theme-live .hero {
+      background: linear-gradient(135deg, rgba(255,255,255,.98), rgba(246,238,224,.96));
+      border-color: rgba(170, 138, 84, 0.18);
+    }
+    body.theme-live .statusbox {
+      background: linear-gradient(135deg, rgba(255,255,255,.98), rgba(246,238,224,.96));
+      border-color: rgba(170, 138, 84, 0.18);
+    }
+    body.theme-live .card {
+      background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(249,244,235,.94));
+      border-color: rgba(170, 138, 84, 0.16);
+    }
+    body.theme-live .nav-item,
+    body.theme-live .kpi,
+    body.theme-live .chart-wrap {
+      background: rgba(255,255,255,.65);
+      border-color: rgba(170, 138, 84, 0.14);
+    }
+    body.theme-live .nav-item:hover {
+      background: rgba(255, 244, 218, .95);
+    }
+    body.theme-live .logo {
+      background: linear-gradient(135deg, rgba(255, 204, 122, .58), rgba(92, 123, 255, .22));
+      border-color: rgba(170, 138, 84, 0.22);
+    }
+    body.theme-live .primary,
+    body.theme-live .danger,
+    body.theme-live .ghost,
+    body.theme-live .mode-switch,
+    body.theme-live .emergency {
+      box-shadow: 0 10px 24px rgba(140, 107, 42, 0.14);
+    }
     * { box-sizing: border-box; }
     body {
       margin: 0;
@@ -508,6 +550,32 @@ function applyTheme(dryRun) {
   document.body.classList.toggle("theme-live", !dryRun);
 }
 
+function getThemePalette(dryRun) {
+  return dryRun
+    ? {
+        axis: "#98adca",
+        axisSoft: "rgba(102, 233, 178, 0.28)",
+        chartBg: "rgba(5,10,18,.08)",
+        areaStart: "#66e9b2",
+        areaEnd: "#7ea9ff",
+        lineStart: "#66e9b2",
+        lineEnd: "#7ea9ff",
+        point: "#e7effb",
+        label: "#98adca",
+      }
+    : {
+        axis: "#8b6b3f",
+        axisSoft: "rgba(255, 204, 122, 0.28)",
+        chartBg: "rgba(255,255,255,.55)",
+        areaStart: "#ffcc7a",
+        areaEnd: "#7ea9ff",
+        lineStart: "#ffad5f",
+        lineEnd: "#5284ff",
+        point: "#1f2937",
+        label: "#5f6c7b",
+      };
+}
+
 function autoText(enabled) {
   return enabled ? "FULL AUTO ON" : "FULL AUTO OFF";
 }
@@ -548,7 +616,7 @@ function escapeXml(value) {
     .replaceAll('"', "&quot;");
 }
 
-function renderActivityChart(items) {
+function renderActivityChart(items, palette) {
   const svg = document.getElementById("activityChart");
   const width = 900;
   const height = 240;
@@ -563,7 +631,7 @@ function renderActivityChart(items) {
   });
 
   if (!values.length) {
-    svg.innerHTML = `<text x="24" y="40" fill="#98adca">No trade activity yet</text>`;
+    svg.innerHTML = `<text x="24" y="40" fill="${palette.label}">No trade activity yet</text>`;
     return;
   }
 
@@ -590,19 +658,19 @@ function renderActivityChart(items) {
   svg.innerHTML = `
     <defs>
       <linearGradient id="areaFill" x1="0" x2="0" y1="0" y2="1">
-        <stop offset="0%" stop-color="#66e9b2" stop-opacity="0.28" />
-        <stop offset="100%" stop-color="#66e9b2" stop-opacity="0.02" />
+        <stop offset="0%" stop-color="${palette.areaStart}" stop-opacity="0.28" />
+        <stop offset="100%" stop-color="${palette.areaEnd}" stop-opacity="0.02" />
       </linearGradient>
       <linearGradient id="lineStroke" x1="0" x2="1">
-        <stop offset="0%" stop-color="#66e9b2" />
-        <stop offset="100%" stop-color="#7ea9ff" />
+        <stop offset="0%" stop-color="${palette.lineStart}" />
+        <stop offset="100%" stop-color="${palette.lineEnd}" />
       </linearGradient>
     </defs>
-    <rect x="0" y="0" width="${width}" height="${height}" rx="16" fill="rgba(5,10,18,.08)"></rect>
-    ${labels.map(label => `<text x="${label.x}" y="${label.y}" fill="#98adca" font-size="12">${escapeXml(label.text)}</text>`).join("")}
+    <rect x="0" y="0" width="${width}" height="${height}" rx="16" fill="${palette.chartBg}"></rect>
+    ${labels.map(label => `<text x="${label.x}" y="${label.y}" fill="${palette.label}" font-size="12">${escapeXml(label.text)}</text>`).join("")}
     <path d="${areaPath}" fill="url(#areaFill)"></path>
     <path d="${linePath}" fill="none" stroke="url(#lineStroke)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
-    ${points.map(point => `<circle cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="3.8" fill="#e7effb"></circle>`).join("")}
+    ${points.map(point => `<circle cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="3.8" fill="${palette.point}"></circle>`).join("")}
   `;
 }
 
@@ -623,6 +691,7 @@ async function refresh() {
   const dryRun = !!config.dry_run;
   const connected = status.status === "running";
   applyTheme(dryRun);
+  const palette = getThemePalette(dryRun);
   const journal = parseTradeJournal(trades);
   setText("connectionState", connected ? "Connected" : "Disconnected");
   setText("balanceValue", status.account ? `${Number(status.account.balance).toFixed(2)} / ${Number(status.account.equity).toFixed(2)}` : "—");
@@ -672,7 +741,7 @@ async function refresh() {
   setText("winRate", closedTrades.length ? `${((wins / closedTrades.length) * 100).toFixed(1)}%` : "—");
   setText("openPl", status.account ? `${Number(status.account.profit).toFixed(2)}` : "—");
 
-  renderActivityChart(journal.slice(-24));
+  renderActivityChart(journal.slice(-24), palette);
 
   const body = document.getElementById("tradesBody");
   const rows = Array.isArray(trades.trades) ? trades.trades.slice(-10).reverse() : [];
