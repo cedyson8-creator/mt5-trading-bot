@@ -75,6 +75,8 @@ Branding assets:
 Production:
 
 - Read `PRODUCTION_RUNBOOK.md` before going live.
+- Read `DEPLOYMENT_GUIDE.md` for Windows setup and packaging.
+- Read `FINAL_LIVE_CHECKLIST.md` before the first live trade.
 - If you enable the API server, open `http://127.0.0.1:8080/` in a browser to use the dashboard and mode toggle.
 - The dashboard now includes live KPI tiles, a trade activity chart, and an emergency stop button.
 - For fully automatic startup and crash recovery, use the watchdog launcher and autostart shortcut.

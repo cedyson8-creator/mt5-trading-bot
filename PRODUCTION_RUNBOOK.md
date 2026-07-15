@@ -139,7 +139,7 @@ If a new change behaves badly:
 3. Run preflight again.
 4. Resume in dry-run first.
 
-## 11. Dashboard mode toggle
+## 10. Dashboard mode toggle
 
 The local dashboard can switch between demo and live mode at runtime.
 
@@ -147,7 +147,7 @@ The local dashboard can switch between demo and live mode at runtime.
 - The dashboard should be bound to `127.0.0.1`
 - Treat the toggle as an operator convenience, not an excuse to skip preflight
 
-## 12. Full automation mode
+## 11. Full automation mode
 
 This project can run unattended after startup:
 
@@ -159,7 +159,7 @@ This project can run unattended after startup:
 
 Use this only after a stable demo burn-in and a small live pilot.
 
-## 13. Emergency stop
+## 12. Emergency stop
 
 The dashboard includes an emergency stop button. It:
 
@@ -170,6 +170,6 @@ The dashboard includes an emergency stop button. It:
 
 Use it when you need to stop the bot immediately, then verify open positions directly in MT5.
 
-## 10. Recommended operating rule
+## 13. Recommended operating rule
 
 Treat this as a supervised trading system, not a fully unattended one. Keep a person responsible for checking it.
