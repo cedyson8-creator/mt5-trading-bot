@@ -336,6 +336,7 @@ class BotAPI(BaseHTTPRequestHandler):
       <div class="statusbox">
         <div>
           <span id="modePill" class="pill warn">Loading...</span>
+          <span id="autoPill" class="pill warn" style="margin-left:8px;">Loading...</span>
           <p class="mode-title" id="modeHeadline">Loading mode...</p>
           <div class="mode-desc" id="modeDesc">Checking runtime state.</div>
         </div>
@@ -568,6 +569,10 @@ async function refresh() {
   const pill = document.getElementById("modePill");
   pill.className = modeClass(dryRun);
   pill.textContent = modeText(dryRun);
+  const fullAuto = !!config.full_auto_enabled;
+  const autoPill = document.getElementById("autoPill");
+  autoPill.className = fullAuto ? "pill ok" : "pill warn";
+  autoPill.textContent = autoText(fullAuto);
   setText("modeHeadline", dryRun ? "Demo mode active" : "Live mode active");
   setText("modeDesc", dryRun
     ? "Orders are simulated. Use this to verify signals, pair selection, and tracking without sending live trades."
@@ -576,14 +581,13 @@ async function refresh() {
   button.textContent = modeButtonText(dryRun);
   button.className = dryRun ? "primary" : "danger";
   button.disabled = false;
-  const fullAuto = !!config.full_auto_enabled;
   const autoButton = document.getElementById("autoButton");
   autoButton.textContent = autoButtonText(fullAuto);
   autoButton.className = fullAuto ? "primary" : "ghost";
   setNotice(connected ? "Dashboard synced." : "MT5 is disconnected. Check the terminal, account, and credentials.", connected ? "ok" : "warn");
-  setText("modeHeadline", fullAuto ? `${dryRun ? "Demo" : "Live"} mode • ${autoText(true)}` : (dryRun ? "Demo mode active" : "Live mode active"));
+  setText("modeHeadline", fullAuto ? `${dryRun ? "Demo" : "Live"} mode • FULL AUTO` : (dryRun ? "Demo mode active" : "Live mode active"));
   setText("modeDesc", fullAuto
-    ? "Full automatic mode keeps watchdog startup enabled and scheduled retraining active. Use with a stable pilot first."
+    ? "Full Auto means: Windows startup persistence is enabled, the watchdog restarts the bot after crashes, MT5 reconnect stays on, and scheduled retraining stays on. Use this after a stable demo burn-in and a small live pilot."
     : (dryRun
       ? "Orders are simulated. Use this to verify signals, pair selection, and tracking without sending live trades."
       : "Live orders are enabled. Keep the bot supervised and confirm the account, broker, and risk settings are correct."));
