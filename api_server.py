@@ -414,6 +414,25 @@ class BotAPI(BaseHTTPRequestHandler):
       font-size: 18px;
       line-height: 1;
     }
+    .copy-btn {
+      padding: 11px 14px;
+      font-size: 13px;
+      background: rgba(32, 50, 77, .95);
+      color: var(--text);
+      border:1px solid var(--button-refresh-border);
+    }
+    .copy-note {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.45;
+      margin-top: 10px;
+    }
+    .notice {
+      margin-top: 10px;
+      min-height: 20px;
+      font-size: 12px;
+      color: var(--muted);
+    }
     pre { margin:0; white-space:pre-wrap; word-break:break-word; line-height:1.5; }
     table { width:100%; border-collapse:collapse; font-size:13px; }
     th, td { border-bottom:1px solid #22344b; padding:10px 6px; text-align:left; vertical-align:top; }
@@ -563,6 +582,11 @@ class BotAPI(BaseHTTPRequestHandler):
       <div class="card" id="controls">
         <div class="label">Runtime Flags</div>
         <pre id="flagsValue">—</pre>
+        <div class="row space">
+          <button class="ghost copy-btn" onclick="copyEnvTemplate()">Copy .env template</button>
+        </div>
+        <div class="copy-note">Copies the safe starter config with placeholders for your MT5 login, password, and broker server.</div>
+        <div id="notice" class="notice"></div>
       </div>
     </div>
 
@@ -662,6 +686,20 @@ function autoText(enabled) {
 
 function autoButtonText(enabled) {
   return enabled ? "Disable Full Auto" : "Enable Full Auto";
+}
+
+function getEnvTemplate() {
+  return [
+    "DRY_RUN=false",
+    "ALLOW_LIVE_TRADING=false",
+    "MT5_LOGIN=12345678",
+    "MT5_PASSWORD=your_password",
+    "MT5_SERVER=your_live_broker_server",
+    "ENABLE_API_SERVER=false",
+    "API_HOST=127.0.0.1",
+    "API_PORT=8080",
+    "AUTO_RETRAIN_ENABLED=true",
+  ].join("\n");
 }
 
 function parseTradeJournal(tradesPayload) {
@@ -897,6 +935,28 @@ async function toggleAutomation() {
   }
   setNotice(data.message || `Full automatic mode ${desired ? "enabled" : "disabled"}.`, "ok");
   await refresh();
+}
+
+async function copyEnvTemplate() {
+  const text = getEnvTemplate();
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    }
+    setNotice(".env template copied to clipboard.", "ok");
+  } catch (err) {
+    setNotice(`Copy failed: ${err.message || err}`, "bad");
+  }
 }
 
 refresh();
