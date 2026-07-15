@@ -338,6 +338,14 @@ class BotAPI(BaseHTTPRequestHandler):
       background: var(--accent);
       box-shadow: 0 0 0 4px rgba(102,233,178,.14);
     }
+    .status-banner.mode-flash {
+      animation: modeFlash .8s ease;
+    }
+    @keyframes modeFlash {
+      0%   { transform: translateY(0); filter: brightness(1); }
+      35%  { transform: translateY(-1px); filter: brightness(1.14); }
+      100% { transform: translateY(0); filter: brightness(1); }
+    }
     .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:16px; margin-top:16px; }
     .card {
       background: var(--panel);
@@ -589,6 +597,9 @@ function applyTheme(dryRun) {
   const banner = document.getElementById("statusBanner");
   const bannerText = document.getElementById("statusBannerText");
   if (banner && bannerText) {
+    banner.classList.remove("mode-flash");
+    void banner.offsetWidth;
+    banner.classList.add("mode-flash");
     bannerText.textContent = dryRun ? "Demo mode active" : "Live mode active";
     banner.style.borderColor = dryRun ? "rgba(255,255,255,.08)" : "rgba(255, 204, 122, 0.34)";
     banner.style.background = dryRun ? "rgba(255,255,255,.04)" : "rgba(255, 204, 122, 0.14)";
