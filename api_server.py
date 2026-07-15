@@ -196,6 +196,19 @@ class BotAPI(BaseHTTPRequestHandler):
       background: linear-gradient(135deg, rgba(255, 204, 122, .58), rgba(92, 123, 255, .22));
       border-color: rgba(170, 138, 84, 0.22);
     }
+    body.theme-live .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 6px;
+      border-radius: 20px 20px 0 0;
+      background: linear-gradient(90deg, rgba(255,204,122,.95), rgba(255,241,210,.85), rgba(92,123,255,.45));
+      pointer-events: none;
+    }
+    body.theme-live .hero {
+      position: relative;
+      overflow: hidden;
+    }
     body.theme-live .primary,
     body.theme-live .danger,
     body.theme-live .ghost,
@@ -304,6 +317,27 @@ class BotAPI(BaseHTTPRequestHandler):
     .mode-title { font-size: 18px; font-weight: 800; margin:0; }
     .mode-desc { color: var(--muted); font-size: 13px; line-height:1.45; }
     .mode-row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+    .status-banner {
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 12px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:800;
+      letter-spacing:.06em;
+      text-transform:uppercase;
+      background: rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.08);
+      margin: 6px 0 14px;
+    }
+    .status-banner .dot {
+      width:10px;
+      height:10px;
+      border-radius:50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 4px rgba(102,233,178,.14);
+    }
     .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:16px; margin-top:16px; }
     .card {
       background: var(--panel);
@@ -417,6 +451,10 @@ class BotAPI(BaseHTTPRequestHandler):
             <div class="muted">Local operator console</div>
             <h1 class="title">MT5 Trading Bot Dashboard</h1>
           </div>
+        </div>
+        <div id="statusBanner" class="status-banner">
+          <span class="dot"></span>
+          <span id="statusBannerText">Demo mode active</span>
         </div>
         <div class="subtitle">
           Monitor live status, review the self-learning model, and switch between demo and live mode from one local page.
@@ -548,6 +586,13 @@ function modeClass(dryRun) {
 function applyTheme(dryRun) {
   document.body.classList.toggle("theme-demo", dryRun);
   document.body.classList.toggle("theme-live", !dryRun);
+  const banner = document.getElementById("statusBanner");
+  const bannerText = document.getElementById("statusBannerText");
+  if (banner && bannerText) {
+    bannerText.textContent = dryRun ? "Demo mode active" : "Live mode active";
+    banner.style.borderColor = dryRun ? "rgba(255,255,255,.08)" : "rgba(255, 204, 122, 0.34)";
+    banner.style.background = dryRun ? "rgba(255,255,255,.04)" : "rgba(255, 204, 122, 0.14)";
+  }
 }
 
 function getThemePalette(dryRun) {
@@ -702,7 +747,7 @@ async function refresh() {
   setText("flagsValue", `Mode: ${modeText(dryRun)}\nLive unlock: ${config.allow_live_trading ? "enabled" : "disabled"}\nAuto retrain: ${config.auto_retrain_enabled ? "enabled" : "disabled"}\nAPI server: ${config.api_enabled ? "enabled" : "disabled"}`);
   const pill = document.getElementById("modePill");
   pill.className = modeClass(dryRun);
-  pill.textContent = modeText(dryRun);
+  pill.textContent = dryRun ? "DEMO" : "LIVE";
   const fullAuto = !!config.full_auto_enabled;
   const autoPill = document.getElementById("autoPill");
   autoPill.className = fullAuto ? "pill ok" : "pill warn";
