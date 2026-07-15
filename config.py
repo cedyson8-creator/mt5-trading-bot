@@ -9,6 +9,7 @@ MT5_LOGIN = int(os.getenv("MT5_LOGIN", "0"))
 MT5_PASSWORD = os.getenv("MT5_PASSWORD", "").strip()
 MT5_SERVER = os.getenv("MT5_SERVER", "").strip()
 DRY_RUN = os.getenv("DRY_RUN", "false").lower() == "true"
+ALLOW_LIVE_TRADING = os.getenv("ALLOW_LIVE_TRADING", "false").lower() == "true"
 
 
 def validate_trading_config(dry_run=None):
@@ -16,6 +17,9 @@ def validate_trading_config(dry_run=None):
 
     if active_dry_run:
         return True, ""
+
+    if not ALLOW_LIVE_TRADING:
+        return False, "ALLOW_LIVE_TRADING is not enabled. Set ALLOW_LIVE_TRADING=true to unlock live trading."
 
     if MT5_LOGIN <= 0:
         return False, "MT5_LOGIN is required for live trading"
@@ -115,6 +119,11 @@ TELEGRAM_BOT_TOKEN = ""
 TELEGRAM_CHAT_ID = ""
 NOTIFY_ON_TRADE = True
 NOTIFY_ON_HEARTBEAT = False
+
+# --- Local API server ---
+ENABLE_API_SERVER = os.getenv("ENABLE_API_SERVER", "false").lower() == "true"
+API_HOST = os.getenv("API_HOST", "127.0.0.1").strip() or "127.0.0.1"
+API_PORT = int(os.getenv("API_PORT", "8080"))
 
 # --- Paths ---
 LOG_FILE = "mt5_bot.log"

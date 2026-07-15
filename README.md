@@ -11,9 +11,13 @@ Quick start:
 
 ```env
 DRY_RUN=false
+ALLOW_LIVE_TRADING=false
 MT5_LOGIN=12345678
 MT5_PASSWORD=your_password
 MT5_SERVER=your_live_broker_server
+ENABLE_API_SERVER=false
+API_HOST=127.0.0.1
+API_PORT=8080
 ```
 
 ## Commands
@@ -65,6 +69,10 @@ Branding assets:
 - Generate desktop and phone artwork: `.\make_brand_assets.ps1`
 - Create a desktop shortcut with the branded icon: `.\create_shortcut.ps1 -Desktop`
 
+Production:
+
+- Read `PRODUCTION_RUNBOOK.md` before going live.
+
 ## Symbol files
 
 `pairs.txt` can contain one symbol per line or comma-separated symbols. Blank lines and `#` comments are ignored.
@@ -80,4 +88,6 @@ Branding assets:
 
 - Test with a demo account first.
 - Verify symbol names, lot limits, and broker stop rules.
+- Set `ALLOW_LIVE_TRADING=true` only when you intentionally want live orders enabled.
+- Keep the API server disabled unless you explicitly need it, and bind it to `127.0.0.1`.
 - Confirm automated trading is enabled in MT5 before going live.

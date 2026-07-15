@@ -110,9 +110,15 @@ class BotAPI(BaseHTTPRequestHandler):
 
 
 def start_api_server(bot_ref, port=8080):
+    return start_api_server_with_host(bot_ref, host=config.API_HOST, port=port)
+
+
+def start_api_server_with_host(bot_ref, host="127.0.0.1", port=8080):
     BotAPI.bot_ref = bot_ref
-    server = HTTPServer(("0.0.0.0", port), BotAPI)
+    server = HTTPServer((host, port), BotAPI)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
-    get_logger().info(f"API server running at http://localhost:{port}")
+    if host not in ("127.0.0.1", "localhost", "::1"):
+        get_logger().warning(f"API server bound to non-local host {host}:{port}")
+    get_logger().info(f"API server running at http://{host}:{port}")
     return server

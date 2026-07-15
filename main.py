@@ -141,10 +141,13 @@ if __name__ == "__main__":
         scheduler = Scheduler(connector, trade_manager, ml_model)
 
         bot_ref = {"connector": connector, "trade_manager": trade_manager, "ml_model": ml_model}
-        try:
-            start_api_server(bot_ref, port=8080)
-        except Exception as e:
-            log.warning(f"API server not started: {e}")
+        if config.ENABLE_API_SERVER:
+            try:
+                start_api_server(bot_ref, port=config.API_PORT)
+            except Exception as e:
+                log.warning(f"API server not started: {e}")
+        else:
+            log.info("API server disabled by config")
 
         signal.signal(signal.SIGINT, signal_handler)
         if hasattr(signal, "SIGTERM"):
