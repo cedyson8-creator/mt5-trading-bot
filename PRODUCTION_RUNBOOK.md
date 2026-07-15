@@ -197,3 +197,39 @@ Use it when you need to stop the bot immediately, then verify open positions dir
 ## 13. Recommended operating rule
 
 Treat this as a supervised trading system, not a fully unattended one. Keep a person responsible for checking it.
+
+## 14. Troubleshooting
+
+If the bot will not start:
+
+- Check that MT5 is installed and logged in.
+- Verify `.env` has valid `MT5_LOGIN`, `MT5_PASSWORD`, and `MT5_SERVER`.
+- Run `.\run_symbols.ps1` to confirm the symbol basket is valid.
+- Run `python preflight.py --live` and read the log output.
+
+If live trading is blocked:
+
+- Confirm `ALLOW_LIVE_TRADING=true`
+- Confirm `DRY_RUN=false`
+- Check that MT5 Algo Trading is enabled
+- Check that the broker server is a live server, not demo
+
+If the dashboard is unreachable:
+
+- Confirm `ENABLE_API_SERVER=true`
+- Confirm `API_HOST=127.0.0.1`
+- Confirm `API_PORT=8080`
+- Restart the bot and try `http://127.0.0.1:8080/`
+
+If the bot keeps reconnecting:
+
+- Check the MT5 terminal connection
+- Check internet connectivity
+- Confirm the broker is not down or blocking the account
+
+If a trade is skipped:
+
+- Check spread
+- Check position limits
+- Check daily loss limits
+- Check broker stop-distance rules
