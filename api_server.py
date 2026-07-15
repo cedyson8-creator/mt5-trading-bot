@@ -254,6 +254,21 @@ class BotAPI(BaseHTTPRequestHandler):
     .primary { background: linear-gradient(135deg, #71efb9, #4fda9f); color:#082015; }
     .danger { background: linear-gradient(135deg, #ffcc7a, #ffad5f); color:#2a1600; }
     .ghost { background: rgba(32, 50, 77, .95); color:#e6eef8; border:1px solid rgba(255,255,255,.08); }
+    .mode-switch {
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      justify-content:center;
+      min-width: 168px;
+    }
+    .btn-icon {
+      display:inline-grid;
+      place-items:center;
+      width: 22px;
+      height: 22px;
+      font-size: 18px;
+      line-height: 1;
+    }
     pre { margin:0; white-space:pre-wrap; word-break:break-word; line-height:1.5; }
     table { width:100%; border-collapse:collapse; font-size:13px; }
     th, td { border-bottom:1px solid #22344b; padding:10px 6px; text-align:left; vertical-align:top; }
@@ -341,7 +356,10 @@ class BotAPI(BaseHTTPRequestHandler):
           <div class="mode-desc" id="modeDesc">Checking runtime state.</div>
         </div>
         <div class="mode-row">
-          <button id="modeButton" class="primary" onclick="toggleMode()">Loading...</button>
+          <button id="modeButton" class="primary mode-switch" onclick="toggleMode()">
+            <span id="modeButtonIcon" class="btn-icon">☀</span>
+            <span id="modeButtonLabel">Loading...</span>
+          </button>
           <button class="ghost" onclick="refresh()">Refresh</button>
         </div>
         <div class="mode-row">
@@ -438,6 +456,10 @@ function modeText(dryRun) {
 
 function modeButtonText(dryRun) {
   return dryRun ? "Switch to Live" : "Switch to Demo";
+}
+
+function modeButtonIcon(dryRun) {
+  return dryRun ? "☾" : "☀";
 }
 
 function modeClass(dryRun) {
@@ -578,8 +600,10 @@ async function refresh() {
     ? "Orders are simulated. Use this to verify signals, pair selection, and tracking without sending live trades."
     : "Live orders are enabled. Keep the bot supervised and confirm the account, broker, and risk settings are correct.");
   const button = document.getElementById("modeButton");
-  button.textContent = modeButtonText(dryRun);
+  document.getElementById("modeButtonIcon").textContent = modeButtonIcon(dryRun);
+  document.getElementById("modeButtonLabel").textContent = modeButtonText(dryRun);
   button.className = dryRun ? "primary" : "danger";
+  button.classList.add("mode-switch");
   button.disabled = false;
   const autoButton = document.getElementById("autoButton");
   autoButton.textContent = autoButtonText(fullAuto);
