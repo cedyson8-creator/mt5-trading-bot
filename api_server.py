@@ -118,7 +118,14 @@ class BotAPI(BaseHTTPRequestHandler):
     :root {
       color-scheme: dark;
       --bg: #07111d;
+      --bg-grad-1: rgba(82, 132, 255, 0.18);
+      --bg-grad-2: rgba(102, 233, 178, 0.13);
+      --bg-base-1: #08101c;
+      --bg-base-2: #09131f;
+      --bg-base-3: #07111d;
       --panel: rgba(14, 24, 40, 0.92);
+      --panel-soft: rgba(15, 28, 48, 0.94);
+      --panel-deep: rgba(10, 18, 31, 0.96);
       --panel-border: rgba(95, 126, 168, 0.24);
       --text: #e7effb;
       --muted: #98adca;
@@ -126,17 +133,45 @@ class BotAPI(BaseHTTPRequestHandler):
       --warn: #ffcc7a;
       --danger: #ff8d8d;
       --shadow: 0 18px 50px rgba(0, 0, 0, 0.30);
+      --button-mode: linear-gradient(135deg, #71efb9, #4fda9f);
+      --button-mode-text: #082015;
+      --button-refresh: rgba(32, 50, 77, .95);
+      --button-refresh-border: rgba(255,255,255,.08);
+    }
+    body.theme-live {
+      color-scheme: light;
+      --bg: #faf7f1;
+      --bg-grad-1: rgba(251, 191, 36, 0.18);
+      --bg-grad-2: rgba(99, 102, 241, 0.12);
+      --bg-base-1: #fffdf8;
+      --bg-base-2: #f4efe4;
+      --bg-base-3: #eee8db;
+      --panel: rgba(255, 255, 255, 0.92);
+      --panel-soft: rgba(255, 255, 255, 0.96);
+      --panel-deep: rgba(248, 242, 231, 0.98);
+      --panel-border: rgba(130, 110, 70, 0.18);
+      --text: #1f2937;
+      --muted: #5f6c7b;
+      --accent: #1f8a5f;
+      --warn: #b45309;
+      --danger: #b91c1c;
+      --shadow: 0 16px 40px rgba(87, 67, 38, 0.14);
+      --button-mode: linear-gradient(135deg, #ffcc7a, #ffad5f);
+      --button-mode-text: #2a1600;
+      --button-refresh: rgba(236, 229, 216, .95);
+      --button-refresh-border: rgba(130,110,70,.10);
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
       font-family: Segoe UI, Arial, sans-serif;
       background:
-        radial-gradient(circle at top left, rgba(82, 132, 255, 0.18), transparent 28%),
-        radial-gradient(circle at top right, rgba(102, 233, 178, 0.13), transparent 24%),
-        linear-gradient(180deg, #08101c 0%, #09131f 45%, #07111d 100%);
+        radial-gradient(circle at top left, var(--bg-grad-1), transparent 28%),
+        radial-gradient(circle at top right, var(--bg-grad-2), transparent 24%),
+        linear-gradient(180deg, var(--bg-base-1) 0%, var(--bg-base-2) 45%, var(--bg-base-3) 100%);
       color: var(--text);
       min-height: 100vh;
+      transition: background .25s ease, color .25s ease;
     }
     .wrap { max-width: 1200px; margin: 0 auto; padding: 28px 20px 36px; }
     .topbar {
@@ -149,7 +184,7 @@ class BotAPI(BaseHTTPRequestHandler):
     }
     .sidebar {
       flex: 0 0 220px;
-      background: linear-gradient(180deg, rgba(14, 24, 40, .96), rgba(10, 18, 31, .96));
+      background: linear-gradient(180deg, var(--panel-soft), var(--panel-deep));
       border:1px solid var(--panel-border);
       border-radius:20px;
       padding:18px;
@@ -176,7 +211,7 @@ class BotAPI(BaseHTTPRequestHandler):
     .nav-kicker { color: var(--muted); font-size: 12px; }
     .hero {
       flex: 1 1 520px;
-      background: linear-gradient(135deg, rgba(15,28,48,.94), rgba(13,23,37,.94));
+      background: linear-gradient(135deg, var(--panel-soft), rgba(13,23,37,.94));
       border:1px solid var(--panel-border);
       border-radius:20px;
       padding:22px;
@@ -192,7 +227,7 @@ class BotAPI(BaseHTTPRequestHandler):
       width: 44px;
       height: 44px;
       border-radius: 14px;
-      background: linear-gradient(135deg, rgba(102,233,178,.22), rgba(82,132,255,.22));
+      background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 22%, transparent), color-mix(in srgb, #5284ff 22%, transparent));
       border:1px solid rgba(255,255,255,.10);
       display:grid;
       place-items:center;
@@ -202,7 +237,7 @@ class BotAPI(BaseHTTPRequestHandler):
     .subtitle { color: var(--muted); line-height: 1.45; }
     .statusbox {
       flex: 0 1 320px;
-      background: linear-gradient(135deg, rgba(18,30,50,.92), rgba(10,18,31,.92));
+      background: linear-gradient(135deg, var(--panel), var(--panel-deep));
       border:1px solid var(--panel-border);
       border-radius:20px;
       padding:18px;
@@ -253,13 +288,15 @@ class BotAPI(BaseHTTPRequestHandler):
     button:disabled { opacity: .55; cursor: not-allowed; }
     .primary { background: linear-gradient(135deg, #71efb9, #4fda9f); color:#082015; }
     .danger { background: linear-gradient(135deg, #ffcc7a, #ffad5f); color:#2a1600; }
-    .ghost { background: rgba(32, 50, 77, .95); color:#e6eef8; border:1px solid rgba(255,255,255,.08); }
+    .ghost { background: var(--button-refresh); color: var(--text); border:1px solid var(--button-refresh-border); }
     .mode-switch {
       display:inline-flex;
       align-items:center;
       gap:10px;
       justify-content:center;
       min-width: 168px;
+      background: var(--button-mode) !important;
+      color: var(--button-mode-text) !important;
     }
     .btn-icon {
       display:inline-grid;
@@ -319,7 +356,7 @@ class BotAPI(BaseHTTPRequestHandler):
     }
   </style>
 </head>
-<body>
+<body class="theme-demo">
   <div class="wrap">
     <div class="topbar">
       <aside class="sidebar">
@@ -466,6 +503,11 @@ function modeClass(dryRun) {
   return dryRun ? "pill warn" : "pill ok";
 }
 
+function applyTheme(dryRun) {
+  document.body.classList.toggle("theme-demo", dryRun);
+  document.body.classList.toggle("theme-live", !dryRun);
+}
+
 function autoText(enabled) {
   return enabled ? "FULL AUTO ON" : "FULL AUTO OFF";
 }
@@ -580,6 +622,7 @@ async function refresh() {
 
   const dryRun = !!config.dry_run;
   const connected = status.status === "running";
+  applyTheme(dryRun);
   const journal = parseTradeJournal(trades);
   setText("connectionState", connected ? "Connected" : "Disconnected");
   setText("balanceValue", status.account ? `${Number(status.account.balance).toFixed(2)} / ${Number(status.account.equity).toFixed(2)}` : "—");
@@ -602,7 +645,7 @@ async function refresh() {
   const button = document.getElementById("modeButton");
   document.getElementById("modeButtonIcon").textContent = modeButtonIcon(dryRun);
   document.getElementById("modeButtonLabel").textContent = modeButtonText(dryRun);
-  button.className = dryRun ? "primary" : "danger";
+  button.className = dryRun ? "primary mode-switch" : "danger mode-switch";
   button.classList.add("mode-switch");
   button.disabled = false;
   const autoButton = document.getElementById("autoButton");
