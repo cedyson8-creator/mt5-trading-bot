@@ -47,7 +47,15 @@ If this is a fresh PC and you want the bot to walk you through the basics:
 
 It will install, list symbols, and run demo preflight before telling you what to do next.
 
-## Option 4: Release package
+## Option 4: Launcher menu
+
+If you want a simple interactive menu:
+
+```powershell
+.\launcher_menu.ps1
+```
+
+## Option 5: Release package
 
 1. On the build machine, run:
 

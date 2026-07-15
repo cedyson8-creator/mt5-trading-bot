@@ -40,6 +40,12 @@ First run:
 .\first_run.ps1
 ```
 
+Launcher menu:
+
+```bash
+.\launcher_menu.ps1
+```
+
 Preflight:
 
 ```bash
@@ -74,6 +80,7 @@ Launchers:
 - Install: `.\install_pc.ps1` or `install_pc.bat`
 - Setup: `.\setup_pc.ps1` or `setup_pc.bat`
 - First run: `.\first_run.ps1` or `first_run.bat`
+- Menu: `.\launcher_menu.ps1` or `launcher_menu.bat`
 - Live: `.\run_live.ps1` or `run_live.bat`
 - Dry-run: `.\run_dry.ps1` or `run_dry.bat`
 - Background: `.\run_background.ps1 -Mode live` or `run_background.bat live`
