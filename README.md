@@ -78,6 +78,7 @@ Production:
 - If you enable the API server, open `http://127.0.0.1:8080/` in a browser to use the dashboard and mode toggle.
 - The dashboard now includes live KPI tiles, a trade activity chart, and an emergency stop button.
 - For fully automatic startup and crash recovery, use the watchdog launcher and autostart shortcut.
+- The dashboard also has a Full Auto switch that creates or removes the Windows startup shortcut and keeps auto-retraining on or off.
 
 ## Symbol files
 

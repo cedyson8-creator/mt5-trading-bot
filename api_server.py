@@ -1,9 +1,43 @@
 import json
 import threading
 import csv
+import os
+import subprocess
+from pathlib import Path
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import config
 from logger import get_logger
+
+STARTUP_SHORTCUT_NAME = "MT5 Trading Bot Auto.lnk"
+PowershellExe = Path(os.environ.get("SystemRoot", r"C:\Windows")) / "System32" / "WindowsPowerShell" / "v1.0" / "powershell.exe"
+
+
+def _startup_shortcut_path():
+    startup = Path(os.environ.get("APPDATA", "")) / "Microsoft" / "Windows" / "Start Menu" / "Programs" / "Startup"
+    return startup / STARTUP_SHORTCUT_NAME
+
+
+def _run_powershell_script(script_name, extra_args=None):
+    script_path = Path(__file__).resolve().parent / script_name
+    if not script_path.exists():
+        return False, f"Missing script: {script_name}"
+
+    args = [
+        str(PowershellExe),
+        "-NoProfile",
+        "-ExecutionPolicy", "Bypass",
+        "-File", str(script_path),
+    ]
+    if extra_args:
+        args.extend(extra_args)
+
+    try:
+        result = subprocess.run(args, capture_output=True, text=True, check=True)
+        output = (result.stdout or result.stderr or "").strip()
+        return True, output
+    except subprocess.CalledProcessError as exc:
+        detail = (exc.stderr or exc.stdout or str(exc)).strip()
+        return False, detail
 
 
 class BotAPI(BaseHTTPRequestHandler):
@@ -50,6 +84,9 @@ class BotAPI(BaseHTTPRequestHandler):
     def do_POST(self):
         if self.path == "/mode":
             self._handle_mode_update()
+            return
+        if self.path == "/automation":
+            self._handle_automation()
             return
         if self.path == "/emergency-stop":
             self._handle_emergency_stop()
@@ -306,6 +343,9 @@ class BotAPI(BaseHTTPRequestHandler):
           <button id="modeButton" class="primary" onclick="toggleMode()">Loading...</button>
           <button class="ghost" onclick="refresh()">Refresh</button>
         </div>
+        <div class="mode-row">
+          <button id="autoButton" class="ghost" onclick="toggleAutomation()">Loading...</button>
+        </div>
         <button class="emergency" onclick="emergencyStop()">Emergency Stop</button>
       </div>
     </div>
@@ -401,6 +441,14 @@ function modeButtonText(dryRun) {
 
 function modeClass(dryRun) {
   return dryRun ? "pill warn" : "pill ok";
+}
+
+function autoText(enabled) {
+  return enabled ? "FULL AUTO ON" : "FULL AUTO OFF";
+}
+
+function autoButtonText(enabled) {
+  return enabled ? "Disable Full Auto" : "Enable Full Auto";
 }
 
 function parseTradeJournal(tradesPayload) {
@@ -528,7 +576,17 @@ async function refresh() {
   button.textContent = modeButtonText(dryRun);
   button.className = dryRun ? "primary" : "danger";
   button.disabled = false;
+  const fullAuto = !!config.full_auto_enabled;
+  const autoButton = document.getElementById("autoButton");
+  autoButton.textContent = autoButtonText(fullAuto);
+  autoButton.className = fullAuto ? "primary" : "ghost";
   setNotice(connected ? "Dashboard synced." : "MT5 is disconnected. Check the terminal, account, and credentials.", connected ? "ok" : "warn");
+  setText("modeHeadline", fullAuto ? `${dryRun ? "Demo" : "Live"} mode • ${autoText(true)}` : (dryRun ? "Demo mode active" : "Live mode active"));
+  setText("modeDesc", fullAuto
+    ? "Full automatic mode keeps watchdog startup enabled and scheduled retraining active. Use with a stable pilot first."
+    : (dryRun
+      ? "Orders are simulated. Use this to verify signals, pair selection, and tracking without sending live trades."
+      : "Live orders are enabled. Keep the bot supervised and confirm the account, broker, and risk settings are correct."));
 
   const closedTrades = journal.filter(item => item.status.toUpperCase() === "CLOSE");
   const closedProfits = closedTrades.map(item => item.profit);
@@ -597,6 +655,30 @@ async function emergencyStop() {
   await refresh();
 }
 
+async function toggleAutomation() {
+  const config = await loadJson("/config");
+  const desired = !config.full_auto_enabled;
+  const message = desired
+    ? "Enable Full Auto? This will create the Windows startup shortcut and keep auto-retrain on."
+    : "Disable Full Auto? This will remove the Windows startup shortcut and turn auto-retrain off.";
+  const proceed = confirm(message);
+  if (!proceed) {
+    return;
+  }
+  const res = await fetch("/automation", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ enabled: desired })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    setNotice(data.error || "Automation update failed", "bad");
+    return;
+  }
+  setNotice(data.message || `Full automatic mode ${desired ? "enabled" : "disabled"}.`, "ok");
+  await refresh();
+}
+
 refresh();
 setInterval(refresh, 5000);
 </script>
@@ -648,6 +730,52 @@ setInterval(refresh, 5000);
             "ok": True,
             "dry_run": config.DRY_RUN,
             "mode": "DEMO" if config.DRY_RUN else "LIVE",
+        })
+
+    def _handle_automation(self):
+        bot = self._get_bot()
+
+        try:
+            payload = self._read_json_body()
+        except Exception:
+            self._json({"error": "invalid json"}, 400)
+            return
+
+        if not isinstance(payload, dict) or "enabled" not in payload:
+            self._json({"error": "enabled field is required"}, 400)
+            return
+
+        desired_enabled = bool(payload.get("enabled"))
+        current_mode = "live" if not config.DRY_RUN else "dry"
+
+        if desired_enabled and not config.DRY_RUN and not config.ALLOW_LIVE_TRADING:
+            self._json({"error": "Live full automation requires ALLOW_LIVE_TRADING=true"}, 403)
+            return
+
+        if desired_enabled:
+            ok, detail = _run_powershell_script("create_autostart.ps1", ["-Mode", current_mode])
+            if not ok:
+                self._json({"error": detail or "Failed to create autostart shortcut"}, 500)
+                return
+        else:
+            ok, detail = _run_powershell_script("remove_autostart.ps1", [])
+            if not ok:
+                self._json({"error": detail or "Failed to remove autostart shortcut"}, 500)
+                return
+
+        config.AUTO_RETRAIN_ENABLED = desired_enabled
+        shortcut_exists = _startup_shortcut_path().exists()
+        get_logger().warning(
+            f"Full automatic mode {'enabled' if desired_enabled else 'disabled'} via dashboard "
+            f"(mode={current_mode}, shortcut={'present' if shortcut_exists else 'missing'})"
+        )
+
+        self._json({
+            "ok": True,
+            "enabled": desired_enabled,
+            "message": "Full automatic mode enabled." if desired_enabled else "Full automatic mode disabled.",
+            "autostart_enabled": shortcut_exists,
+            "auto_retrain_enabled": config.AUTO_RETRAIN_ENABLED,
         })
 
     def _handle_emergency_stop(self):
@@ -745,6 +873,7 @@ setInterval(refresh, 5000);
             RR_RATIO, MAX_CONCURRENT_POSITIONS, MAX_DAILY_LOSS_PCT,
             ML_CONFIDENCE_THRESHOLD, DRY_RUN, ALLOW_LIVE_TRADING, ENABLE_API_SERVER, AUTO_RETRAIN_ENABLED,
         )
+        startup_shortcut = _startup_shortcut_path()
         self._json({
             "pairs": config.PAIRS,
             "timeframe": TIMEFRAME_STR,
@@ -759,6 +888,8 @@ setInterval(refresh, 5000);
             "allow_live_trading": ALLOW_LIVE_TRADING,
             "api_enabled": ENABLE_API_SERVER,
             "auto_retrain_enabled": AUTO_RETRAIN_ENABLED,
+            "autostart_enabled": startup_shortcut.exists(),
+            "full_auto_enabled": AUTO_RETRAIN_ENABLED and startup_shortcut.exists(),
         })
 
     def log_message(self, format, *args):

@@ -64,6 +64,12 @@ For crash recovery and boot persistence:
 .\create_autostart.ps1 -Mode live
 ```
 
+If you want to undo startup persistence:
+
+```powershell
+.\remove_autostart.ps1
+```
+
 ## 4. Preflight before every live launch
 
 Run:
@@ -147,6 +153,7 @@ This project can run unattended after startup:
 
 - `watchdog.ps1` restarts the bot if it crashes
 - `create_autostart.ps1` places a shortcut in the Windows Startup folder
+- `remove_autostart.ps1` removes that startup shortcut
 - `AUTO_RETRAIN_ENABLED=true` keeps ML retraining scheduled
 - the scheduler already reconnects MT5 automatically when the terminal drops
 
