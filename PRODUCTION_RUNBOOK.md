@@ -202,34 +202,65 @@ Treat this as a supervised trading system, not a fully unattended one. Keep a pe
 
 If the bot will not start:
 
-- Check that MT5 is installed and logged in.
+- Check MT5 itself first: open the terminal and confirm it is logged in.
 - Verify `.env` has valid `MT5_LOGIN`, `MT5_PASSWORD`, and `MT5_SERVER`.
-- Run `.\run_symbols.ps1` to confirm the symbol basket is valid.
-- Run `python preflight.py --live` and read the log output.
+- Run:
+
+```powershell
+.\launcher_menu.ps1
+```
+
+- Then choose `1` for first run or `4` for live mode.
+- Run:
+
+```powershell
+.\run_symbols.ps1
+python preflight.py --live
+```
+
+- If those fail, read `mt5_bot.log`.
 
 If live trading is blocked:
 
-- Confirm `ALLOW_LIVE_TRADING=true`
-- Confirm `DRY_RUN=false`
-- Check that MT5 Algo Trading is enabled
-- Check that the broker server is a live server, not demo
+- Confirm `ALLOW_LIVE_TRADING=true`.
+- Confirm `DRY_RUN=false`.
+- Run:
+
+```powershell
+python preflight.py --live
+```
+
+- Check that MT5 Algo Trading is enabled.
+- Check that the broker server is a live server, not demo.
 
 If the dashboard is unreachable:
 
-- Confirm `ENABLE_API_SERVER=true`
-- Confirm `API_HOST=127.0.0.1`
-- Confirm `API_PORT=8080`
-- Restart the bot and try `http://127.0.0.1:8080/`
+- Confirm `ENABLE_API_SERVER=true`.
+- Confirm `API_HOST=127.0.0.1`.
+- Confirm `API_PORT=8080`.
+- Restart the bot with:
+
+```powershell
+.\run_live.ps1
+```
+
+- Then open `http://127.0.0.1:8080/`
 
 If the bot keeps reconnecting:
 
-- Check the MT5 terminal connection
-- Check internet connectivity
-- Confirm the broker is not down or blocking the account
+- Check the MT5 terminal connection.
+- Check internet connectivity.
+- Run:
+
+```powershell
+.\run_symbols.ps1
+```
+
+- Confirm the broker is not down or blocking the account.
 
 If a trade is skipped:
 
-- Check spread
-- Check position limits
-- Check daily loss limits
-- Check broker stop-distance rules
+- Check spread in the dashboard or log output.
+- Check position limits in `config.py`.
+- Check daily loss limits in `config.py`.
+- Check broker stop-distance rules in the log.
