@@ -278,7 +278,7 @@ function New-Background {
             $upperGlow2.Dispose()
         }
 
-        Draw-Grid -Graphics $g -Width $Width -Height $Height -Spacing ([Math]::Max(75, [int]($Width / 24))) -Color ([System.Drawing.Color]::FromArgb(20, 150, 200, 255))
+        Draw-Grid -Graphics $g -Width $Width -Height $Height -Spacing ([Math]::Max(120, [int]($Width / 18))) -Color ([System.Drawing.Color]::FromArgb(12, 150, 200, 255))
 
         $pathBrush = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(36, 0, 0, 0))
         try {
@@ -294,7 +294,7 @@ function New-Background {
             $trackPoints.Add((New-Object System.Drawing.Point ([int]($Width * 0.80)), ([int]($Height * 0.46))))
             $trackPoints.Add((New-Object System.Drawing.Point ([int]($Width * 0.92)), ([int]($Height * 0.31))))
 
-            $softLine = New-Object System.Drawing.Pen ([System.Drawing.Color]::FromArgb(55, 69, 255, 195)), ([Math]::Max(6, [int]($Height / 250)))
+            $softLine = New-Object System.Drawing.Pen ([System.Drawing.Color]::FromArgb(38, 69, 255, 195)), ([Math]::Max(4, [int]($Height / 320)))
             $softLine.LineJoin = [System.Drawing.Drawing2D.LineJoin]::Round
             try {
                 $g.DrawLines($softLine, $trackPoints.ToArray())
@@ -302,7 +302,7 @@ function New-Background {
                 $softLine.Dispose()
             }
 
-            $hardLine = New-Object System.Drawing.Pen ([System.Drawing.Color]::FromArgb(255, 120, 255, 190)), ([Math]::Max(3, [int]($Height / 420)))
+            $hardLine = New-Object System.Drawing.Pen ([System.Drawing.Color]::FromArgb(220, 120, 255, 190)), ([Math]::Max(2, [int]($Height / 520)))
             $hardLine.LineJoin = [System.Drawing.Drawing2D.LineJoin]::Round
             try {
                 $g.DrawLines($hardLine, $trackPoints.ToArray())
@@ -314,7 +314,7 @@ function New-Background {
         }
 
         $bottomBase = [int]($Height * 0.78)
-        Draw-Candles -Graphics $g -BaseX ([int]($Width * 0.22)) -BaseY $bottomBase -Scale ([Math]::Max(1, [int]($Height / 1080)))
+        Draw-Candles -Graphics $g -BaseX ([int]($Width * 0.22)) -BaseY $bottomBase -Scale ([Math]::Max(1, [int]($Height / 1400)))
 
         $frameBrush = New-Object System.Drawing.Drawing2D.LinearGradientBrush(
             $bgRect,
