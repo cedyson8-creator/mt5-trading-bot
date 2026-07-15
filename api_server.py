@@ -286,7 +286,31 @@ class BotAPI(BaseHTTPRequestHandler):
       border:1px solid rgba(255,255,255,.10);
       display:grid;
       place-items:center;
-      font-size: 22px;
+      position: relative;
+      font-size: 0;
+      overflow: hidden;
+    }
+    .logo::before {
+      content: "MT";
+      position: absolute;
+      inset: 0;
+      display:grid;
+      place-items:center;
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: .08em;
+      color: var(--text);
+    }
+    .logo::after {
+      content: "";
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      right: 5px;
+      top: 5px;
+      background: radial-gradient(circle at 35% 35%, rgba(255,255,255,.95), rgba(255,204,122,.88));
+      box-shadow: 0 0 0 2px rgba(255,255,255,.10);
     }
     .title { font-size: 30px; font-weight: 800; margin: 0 0 6px; letter-spacing: -0.02em; }
     .subtitle { color: var(--muted); line-height: 1.45; }
@@ -454,7 +478,7 @@ class BotAPI(BaseHTTPRequestHandler):
 
       <div class="hero" id="overview">
         <div class="brandline">
-          <div class="logo">⟠</div>
+          <div class="logo" aria-label="MT5 Trading Bot logo"></div>
           <div>
             <div class="muted">Local operator console</div>
             <h1 class="title">MT5 Trading Bot Dashboard</h1>
