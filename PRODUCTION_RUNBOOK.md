@@ -113,6 +113,30 @@ Monitor:
 - `trade_journal.csv`
 - `open_trades_snapshot.json`
 
+## Trading flow
+
+```text
+Market data
+   ↓
+Signal step
+   ↓
+ML confirmation
+   ↓
+Trend filter
+   ↓
+Risk checks
+   ↓
+Place trade
+```
+
+In code:
+
+- `Scheduler` pulls data and requests a decision
+- `strategy_engine.generate_signal()` or `MLTradingModel.predict()` creates the signal
+- `mtf_filter()` checks the higher-timeframe trend
+- `risk_manager` checks spread, SL/TP, size, daily loss, and limits
+- `TradeManager.execute_signal()` sends the final order through MT5
+
 ## 7. Daily checks
 
 - Confirm the bot is connected to the expected account.
