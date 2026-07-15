@@ -1,0 +1,6 @@
+# Example symbol basket for the bot
+# One symbol per line or comma-separated symbols are both supported
+
+EURUSD
+GBPUSD
+USDJPY

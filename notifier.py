@@ -1,6 +1,5 @@
 import urllib.request
 import urllib.parse
-import json
 from config import TELEGRAM_ENABLED, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
 from logger import get_logger
 
@@ -35,6 +34,7 @@ def notify_trade_open(signal, pair, lots, price, sl, tp):
 
 
 def notify_trade_close(pair, signal, profit, balance):
+    signal = signal or "buy"
     emoji = "✅" if profit > 0 else "❌"
     msg = f"{emoji} <b>TRADE CLOSE</b> {pair}\n"
     msg += f"  Signal: {signal.upper()}\n"

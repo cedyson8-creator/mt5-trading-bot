@@ -89,6 +89,60 @@ class MT5Connector:
             return mt5.positions_get(symbol=symbol)
         return mt5.positions_get()
 
+    def get_history_deals(self, date_from, date_to):
+        try:
+            return mt5.history_deals_get(date_from, date_to)
+        except Exception as e:
+            self.logger.error(f"Failed to fetch history deals: {e}")
+            return None
+
+    def validate_symbols(self, pairs, strict=False):
+        valid_pairs = []
+        warnings = []
+        fatal_issues = []
+
+        for pair in pairs:
+            if not mt5.symbol_select(pair, True):
+                msg = f"Invalid or unavailable symbol: {pair}"
+                (fatal_issues if strict else warnings).append(msg)
+                continue
+
+            info = mt5.symbol_info(pair)
+            if info is None:
+                msg = f"Symbol info unavailable for {pair}"
+                (fatal_issues if strict else warnings).append(msg)
+                continue
+
+            if getattr(info, "trade_mode", 0) == 0:
+                msg = f"Trading is disabled for symbol {pair}"
+                (fatal_issues if strict else warnings).append(msg)
+                continue
+
+            valid_pairs.append(pair)
+
+        return valid_pairs, warnings, fatal_issues
+
+    def startup_check(self, pairs, strict_symbols=False):
+        issues = []
+        terminal = mt5.terminal_info()
+        account = mt5.account_info()
+
+        if terminal is None:
+            issues.append("MT5 terminal is not available")
+        elif not terminal.trade_allowed:
+            issues.append("Algo trading is disabled in the MT5 terminal")
+
+        if account is None:
+            issues.append("MT5 account info is unavailable")
+        elif MT5_LOGIN and account.login != MT5_LOGIN:
+            issues.append(f"Connected to account {account.login}, expected {MT5_LOGIN}")
+
+        if strict_symbols:
+            _, _, fatal_issues = self.validate_symbols(pairs, strict=True)
+            issues.extend(fatal_issues)
+
+        return issues
+
     def disconnect(self):
         mt5.shutdown()
         self.connected = False

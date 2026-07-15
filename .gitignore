@@ -1,6 +1,11 @@
 .env
 *.log
-*.csv
-*.pkl
+mt5_bot.log
+trade_journal.csv
+open_trades_snapshot.json
+ml_model.pkl
+ml_feedback.pkl
+ml_features.csv
 __pycache__/
 *.pyc
+.venv/

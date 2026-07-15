@@ -1,7 +1,8 @@
 import json
 import threading
+import csv
 from http.server import HTTPServer, BaseHTTPRequestHandler
-from config import PAIRS, STRATEGY
+import config
 from logger import get_logger
 
 
@@ -54,18 +55,18 @@ class BotAPI(BaseHTTPRequestHandler):
 
         self._json({
             "status": "running" if connected else "disconnected",
-            "strategy": STRATEGY,
-            "pairs": PAIRS,
+            "strategy": config.STRATEGY,
+            "pairs": config.PAIRS,
             "account": account,
             "open_positions": len(positions),
         })
 
     def _handle_trades(self):
         try:
-            with open("trade_journal.csv", "r") as f:
-                lines = f.readlines()
-            header = lines[0].strip().split(",") if lines else []
-            rows = [line.strip().split(",") for line in lines[-51:]]
+            with open(config.TRADE_JOURNAL, "r", newline="") as f:
+                reader = list(csv.reader(f))
+            header = reader[0] if reader else []
+            rows = reader[-51:] if reader else []
             self._json({"header": header, "trades": rows})
         except (FileNotFoundError, IndexError):
             self._json({"trades": []})
@@ -87,14 +88,14 @@ class BotAPI(BaseHTTPRequestHandler):
 
     def _handle_config(self):
         from config import (
-            PAIRS, TIMEFRAME_STR, STRATEGY, RISK_PER_TRADE, ATR_PERIOD,
+            TIMEFRAME_STR, RISK_PER_TRADE, ATR_PERIOD,
             RR_RATIO, MAX_CONCURRENT_POSITIONS, MAX_DAILY_LOSS_PCT,
             ML_CONFIDENCE_THRESHOLD, DRY_RUN,
         )
         self._json({
-            "pairs": PAIRS,
+            "pairs": config.PAIRS,
             "timeframe": TIMEFRAME_STR,
-            "strategy": STRATEGY,
+            "strategy": config.STRATEGY,
             "risk_per_trade": RISK_PER_TRADE,
             "atr_period": ATR_PERIOD,
             "rr_ratio": RR_RATIO,

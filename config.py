@@ -5,10 +5,31 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # --- Account ---
-MT5_LOGIN = int(os.getenv("MT5_LOGIN", "12345678"))
-MT5_PASSWORD = os.getenv("MT5_PASSWORD", "")
-MT5_SERVER = os.getenv("MT5_SERVER", "MetaQuotes-Demo")
-DRY_RUN = os.getenv("DRY_RUN", "true").lower() == "true"
+MT5_LOGIN = int(os.getenv("MT5_LOGIN", "0"))
+MT5_PASSWORD = os.getenv("MT5_PASSWORD", "").strip()
+MT5_SERVER = os.getenv("MT5_SERVER", "").strip()
+DRY_RUN = os.getenv("DRY_RUN", "false").lower() == "true"
+
+
+def validate_trading_config(dry_run=None):
+    active_dry_run = DRY_RUN if dry_run is None else dry_run
+
+    if active_dry_run:
+        return True, ""
+
+    if MT5_LOGIN <= 0:
+        return False, "MT5_LOGIN is required for live trading"
+
+    if not MT5_PASSWORD:
+        return False, "MT5_PASSWORD is required for live trading"
+
+    if not MT5_SERVER:
+        return False, "MT5_SERVER is required for live trading"
+
+    if "demo" in MT5_SERVER.lower():
+        return False, f"MT5_SERVER points to a demo server ({MT5_SERVER}); set a live server for real trading"
+
+    return True, ""
 
 # --- Trading Pairs ---
 PAIRS = ["EURUSD", "GBPUSD", "USDJPY", "AUDUSD", "USDCAD"]
@@ -98,3 +119,7 @@ NOTIFY_ON_HEARTBEAT = False
 # --- Paths ---
 LOG_FILE = "mt5_bot.log"
 TRADE_JOURNAL = "trade_journal.csv"
+
+# --- Recovery / startup safety ---
+HISTORY_BACKFILL_DAYS = 30
+OPEN_TRADES_SNAPSHOT = "open_trades_snapshot.json"

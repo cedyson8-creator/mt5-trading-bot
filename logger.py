@@ -37,10 +37,16 @@ def get_logger():
     return _logger
 
 
-def log_trade(action, pair, lots, price, sl, tp, reason=""):
+def log_trade(action, pair, lots, price, sl, tp, reason="", ticket="", profit="", balance="", status="OPEN", features=""):
     journal_exists = os.path.isfile(TRADE_JOURNAL)
     with open(TRADE_JOURNAL, "a", newline="") as f:
         writer = csv.writer(f)
         if not journal_exists:
-            writer.writerow(["timestamp", "action", "pair", "lots", "price", "sl", "tp", "reason"])
-        writer.writerow([datetime.now().isoformat(), action, pair, lots, price, sl, tp, reason])
+            writer.writerow([
+                "timestamp", "action", "pair", "lots", "price", "sl", "tp", "reason",
+                "status", "ticket", "profit", "balance", "features"
+            ])
+        writer.writerow([
+            datetime.now().isoformat(), action, pair, lots, price, sl, tp, reason,
+            status, ticket, profit, balance, features
+        ])
