@@ -84,3 +84,45 @@ If something goes wrong:
 2. Remove the autostart shortcut.
 3. Run demo mode again.
 4. Recheck the checklist before relaunching live.
+
+## Troubleshooting
+
+If install fails:
+
+```powershell
+python --version
+.\install_pc.ps1 -ForceRecreate
+```
+
+If the bot does not start:
+
+```powershell
+.\launcher_menu.ps1
+.\run_symbols.ps1
+python preflight.py --live
+```
+
+If the dashboard does not open:
+
+```powershell
+.\run_live.ps1
+```
+
+Then verify:
+
+- `ENABLE_API_SERVER=true`
+- `API_HOST=127.0.0.1`
+- `API_PORT=8080`
+
+If autostart is wrong:
+
+```powershell
+.\remove_autostart.ps1
+.\create_autostart.ps1 -Mode live
+```
+
+If you need to rebuild the release package:
+
+```powershell
+.\package_windows.ps1
+```
