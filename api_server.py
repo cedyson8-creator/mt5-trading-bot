@@ -75,69 +75,197 @@ class BotAPI(BaseHTTPRequestHandler):
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>MT5 Trading Bot Dashboard</title>
   <style>
-    :root { color-scheme: dark; }
-    body { margin:0; font-family: Segoe UI, Arial, sans-serif; background:#08111f; color:#e6eef8; }
-    .wrap { max-width: 1080px; margin: 0 auto; padding: 24px; }
-    .hero { display:flex; gap:16px; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; }
-    .card { background:#0f1b2d; border:1px solid #20324d; border-radius:16px; padding:16px; box-shadow:0 10px 30px rgba(0,0,0,.25); }
+    :root {
+      color-scheme: dark;
+      --bg: #07111d;
+      --panel: rgba(14, 24, 40, 0.92);
+      --panel-border: rgba(95, 126, 168, 0.24);
+      --text: #e7effb;
+      --muted: #98adca;
+      --accent: #66e9b2;
+      --warn: #ffcc7a;
+      --danger: #ff8d8d;
+      --shadow: 0 18px 50px rgba(0, 0, 0, 0.30);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Segoe UI, Arial, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(82, 132, 255, 0.18), transparent 28%),
+        radial-gradient(circle at top right, rgba(102, 233, 178, 0.13), transparent 24%),
+        linear-gradient(180deg, #08101c 0%, #09131f 45%, #07111d 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    .wrap { max-width: 1200px; margin: 0 auto; padding: 28px 20px 36px; }
+    .topbar {
+      display:flex;
+      gap:16px;
+      align-items:flex-start;
+      justify-content:space-between;
+      flex-wrap:wrap;
+      margin-bottom: 18px;
+    }
+    .hero {
+      flex: 1 1 520px;
+      background: linear-gradient(135deg, rgba(15,28,48,.94), rgba(13,23,37,.94));
+      border:1px solid var(--panel-border);
+      border-radius:20px;
+      padding:22px;
+      box-shadow: var(--shadow);
+    }
+    .brandline {
+      display:flex;
+      align-items:center;
+      gap:12px;
+      margin-bottom: 12px;
+    }
+    .logo {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(102,233,178,.22), rgba(82,132,255,.22));
+      border:1px solid rgba(255,255,255,.10);
+      display:grid;
+      place-items:center;
+      font-size: 22px;
+    }
+    .title { font-size: 30px; font-weight: 800; margin: 0 0 6px; letter-spacing: -0.02em; }
+    .subtitle { color: var(--muted); line-height: 1.45; }
+    .statusbox {
+      flex: 0 1 320px;
+      background: linear-gradient(135deg, rgba(18,30,50,.92), rgba(10,18,31,.92));
+      border:1px solid var(--panel-border);
+      border-radius:20px;
+      padding:18px;
+      box-shadow: var(--shadow);
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+      min-width: 280px;
+    }
+    .pill {
+      display:inline-block;
+      padding:7px 11px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:800;
+      letter-spacing:.05em;
+      text-transform:uppercase;
+    }
+    .ok { background: rgba(18, 59, 42, .95); color:#8df2b8; }
+    .warn { background: rgba(59, 38, 18, .95); color:#ffd08a; }
+    .bad { background: rgba(59, 18, 18, .95); color:#ffb0b0; }
+    .mode-title { font-size: 18px; font-weight: 800; margin:0; }
+    .mode-desc { color: var(--muted); font-size: 13px; line-height:1.45; }
+    .mode-row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
     .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:16px; margin-top:16px; }
-    .title { font-size: 28px; font-weight: 700; margin: 0 0 6px; }
-    .muted { color:#9cb0c9; }
-    .pill { display:inline-block; padding:6px 10px; border-radius:999px; font-size:12px; font-weight:700; letter-spacing:.04em; }
-    .ok { background:#123b2a; color:#8df2b8; }
-    .warn { background:#3b2612; color:#ffd08a; }
-    .bad { background:#3b1212; color:#ff9d9d; }
-    .label { font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:#87a1bf; margin-bottom:6px; }
-    .value { font-size:22px; font-weight:700; word-break:break-word; }
-    button { border:0; border-radius:12px; padding:12px 16px; font-weight:700; cursor:pointer; }
-    .primary { background:#5ee4a8; color:#082015; }
-    .danger { background:#ffb45c; color:#2a1600; }
-    .secondary { background:#20324d; color:#e6eef8; }
-    pre { margin:0; white-space:pre-wrap; word-break:break-word; }
+    .card {
+      background: var(--panel);
+      border:1px solid var(--panel-border);
+      border-radius:18px;
+      padding:18px;
+      box-shadow: var(--shadow);
+    }
+    .label { font-size:12px; text-transform:uppercase; letter-spacing:.09em; color:#89a0bd; margin-bottom:8px; }
+    .value { font-size:24px; font-weight:800; word-break:break-word; }
+    .muted { color: var(--muted); }
+    .metric { display:flex; flex-direction:column; gap:6px; min-height: 90px; }
+    .metric .value { font-size:26px; }
+    button {
+      border:0;
+      border-radius:14px;
+      padding:13px 18px;
+      font-weight:800;
+      cursor:pointer;
+      transition: transform .08s ease, opacity .15s ease, filter .15s ease;
+    }
+    button:hover { filter: brightness(1.03); }
+    button:active { transform: translateY(1px); }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+    .primary { background: linear-gradient(135deg, #71efb9, #4fda9f); color:#082015; }
+    .danger { background: linear-gradient(135deg, #ffcc7a, #ffad5f); color:#2a1600; }
+    .ghost { background: rgba(32, 50, 77, .95); color:#e6eef8; border:1px solid rgba(255,255,255,.08); }
+    pre { margin:0; white-space:pre-wrap; word-break:break-word; line-height:1.5; }
     table { width:100%; border-collapse:collapse; font-size:13px; }
-    th, td { border-bottom:1px solid #20324d; padding:8px 6px; text-align:left; }
-    th { color:#9cb0c9; font-weight:600; }
+    th, td { border-bottom:1px solid #22344b; padding:10px 6px; text-align:left; vertical-align:top; }
+    th { color:#9cb0c9; font-weight:700; white-space:nowrap; }
     .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
     .space { margin-top:16px; }
+    .footer {
+      margin-top: 16px;
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .split { display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-top:16px; }
+    @media (max-width: 820px) {
+      .split { grid-template-columns: 1fr; }
+      .hero, .statusbox { flex-basis: 100%; }
+    }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="hero">
-      <div>
-        <h1 class="title">MT5 Trading Bot Dashboard</h1>
-        <div class="muted">Local control panel for monitoring and mode switching.</div>
+    <div class="topbar">
+      <div class="hero">
+        <div class="brandline">
+          <div class="logo">⟠</div>
+          <div>
+            <div class="muted">Local operator console</div>
+            <h1 class="title">MT5 Trading Bot Dashboard</h1>
+          </div>
+        </div>
+        <div class="subtitle">
+          Monitor live status, review the self-learning model, and switch between demo and live mode from one local page.
+        </div>
+        <div class="footer">
+          <div>Runs locally on <span id="hostValue">127.0.0.1</span></div>
+          <div>Last refresh: <span id="lastRefresh">—</span></div>
+        </div>
       </div>
-      <div class="row">
-        <span id="modePill" class="pill warn">Loading...</span>
-        <button id="modeButton" class="primary" onclick="toggleMode()">Loading...</button>
+
+      <div class="statusbox">
+        <div>
+          <span id="modePill" class="pill warn">Loading...</span>
+          <p class="mode-title" id="modeHeadline">Loading mode...</p>
+          <div class="mode-desc" id="modeDesc">Checking runtime state.</div>
+        </div>
+        <div class="mode-row">
+          <button id="modeButton" class="primary" onclick="toggleMode()">Loading...</button>
+          <button class="ghost" onclick="refresh()">Refresh</button>
+        </div>
       </div>
     </div>
 
     <div class="grid">
-      <div class="card">
+      <div class="card metric">
         <div class="label">Connection</div>
         <div id="connectionState" class="value">Loading...</div>
         <div class="muted">MT5 terminal and account status</div>
       </div>
-      <div class="card">
+      <div class="card metric">
         <div class="label">Account Balance</div>
         <div id="balanceValue" class="value">—</div>
         <div class="muted">Current account balance and equity</div>
       </div>
-      <div class="card">
+      <div class="card metric">
         <div class="label">Open Positions</div>
         <div id="positionsValue" class="value">—</div>
         <div class="muted">Live positions detected by the bot</div>
       </div>
-      <div class="card">
+      <div class="card metric">
         <div class="label">Self-Learning</div>
         <div id="mlValue" class="value">—</div>
         <div class="muted">Model training and feedback status</div>
       </div>
     </div>
 
-    <div class="grid space">
+    <div class="split space">
       <div class="card">
         <div class="label">Pairs</div>
         <pre id="pairsValue">—</pre>
@@ -175,6 +303,12 @@ function setText(id, value) {
   document.getElementById(id).textContent = value;
 }
 
+function setNotice(message, kind) {
+  const el = document.getElementById("notice");
+  el.textContent = message;
+  el.style.color = kind === "bad" ? "#ffb0b0" : kind === "warn" ? "#ffd08a" : "#98adca";
+}
+
 function modeText(dryRun) {
   return dryRun ? "DEMO MODE" : "LIVE MODE";
 }
@@ -188,25 +322,40 @@ function modeClass(dryRun) {
 }
 
 async function refresh() {
-  const status = await loadJson("/status");
-  const config = await loadJson("/config");
-  const model = await loadJson("/model");
-  const trades = await loadJson("/trades");
+  let status, config, model, trades;
+  try {
+    [status, config, model, trades] = await Promise.all([
+      loadJson("/status"),
+      loadJson("/config"),
+      loadJson("/model"),
+      loadJson("/trades"),
+    ]);
+  } catch (err) {
+    setNotice(`Dashboard refresh failed: ${err.message || err}`, "bad");
+    return;
+  }
 
   const dryRun = !!config.dry_run;
   const connected = status.status === "running";
   setText("connectionState", connected ? "Connected" : "Disconnected");
   setText("balanceValue", status.account ? `${Number(status.account.balance).toFixed(2)} / ${Number(status.account.equity).toFixed(2)}` : "—");
   setText("positionsValue", String(status.open_positions ?? 0));
-  setText("mlValue", model.trained ? `Trained (${(model.accuracy * 100).toFixed(1)}%)` : "Not trained");
+  const feedbackCount = model.feedback_samples ?? status.self_learning?.feedback_samples ?? 0;
+  setText("mlValue", model.trained ? `Trained (${(model.accuracy * 100).toFixed(1)}%) • ${feedbackCount} feedback` : `Not trained • ${feedbackCount} feedback`);
   setText("pairsValue", Array.isArray(status.pairs) ? status.pairs.join(", ") : "—");
   setText("flagsValue", `Mode: ${modeText(dryRun)}\nLive unlock: ${config.allow_live_trading ? "enabled" : "disabled"}\nAPI server: ${config.api_enabled ? "enabled" : "disabled"}`);
   const pill = document.getElementById("modePill");
   pill.className = modeClass(dryRun);
   pill.textContent = modeText(dryRun);
+  setText("modeHeadline", dryRun ? "Demo mode active" : "Live mode active");
+  setText("modeDesc", dryRun
+    ? "Orders are simulated. Use this to verify signals, pair selection, and tracking without sending live trades."
+    : "Live orders are enabled. Keep the bot supervised and confirm the account, broker, and risk settings are correct.");
   const button = document.getElementById("modeButton");
   button.textContent = modeButtonText(dryRun);
   button.className = dryRun ? "primary" : "danger";
+  button.disabled = false;
+  setNotice(connected ? "Dashboard synced." : "MT5 is disconnected. Check the terminal, account, and credentials.", connected ? "ok" : "warn");
 
   const body = document.getElementById("tradesBody");
   const rows = Array.isArray(trades.trades) ? trades.trades.slice(-10).reverse() : [];
@@ -218,11 +367,19 @@ async function refresh() {
       return `<tr><td>${time ?? ""}</td><td>${pair ?? ""}</td><td>${action ?? ""}</td><td>${status ?? ""}</td><td>${profit ?? ""}</td><td>${ticket ?? ""}</td></tr>`;
     }).join("");
   }
+
+  setText("lastRefresh", new Date().toLocaleTimeString());
 }
 
 async function toggleMode() {
   const config = await loadJson("/config");
   const desired = !config.dry_run;
+  if (!desired) {
+    const proceed = confirm("Switch to live mode? This will allow real orders if ALLOW_LIVE_TRADING is enabled.");
+    if (!proceed) {
+      return;
+    }
+  }
   const res = await fetch("/mode", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -230,9 +387,10 @@ async function toggleMode() {
   });
   const data = await res.json();
   if (!res.ok) {
-    alert(data.error || "Mode change failed");
+    setNotice(data.error || "Mode change failed", "bad");
     return;
   }
+  setNotice(`Mode switched to ${data.mode}.`, "ok");
   await refresh();
 }
 
@@ -258,8 +416,20 @@ setInterval(refresh, 5000);
             return
 
         desired_dry_run = bool(payload.get("dry_run"))
+        current_positions = []
+        connector = bot.get("connector")
+        if connector:
+            try:
+                current_positions = connector.get_positions() or []
+            except Exception:
+                current_positions = []
         if not desired_dry_run and not config.ALLOW_LIVE_TRADING:
             self._json({"error": "Live trading is locked. Set ALLOW_LIVE_TRADING=true first."}, 403)
+            return
+        if not desired_dry_run and current_positions and config.DRY_RUN:
+            self._json({
+                "error": "Live mode switch blocked while positions are open. Close or reconcile positions first."
+            }, 409)
             return
 
         config.DRY_RUN = desired_dry_run
@@ -280,6 +450,7 @@ setInterval(refresh, 5000);
     def _handle_status(self):
         bot = self._get_bot()
         connector = bot.get("connector")
+        ml = bot.get("ml_model")
         account = None
         positions = []
         connected = False
@@ -297,6 +468,10 @@ setInterval(refresh, 5000);
             "pairs": config.PAIRS,
             "account": account,
             "open_positions": len(positions),
+            "self_learning": {
+                "trained": bool(ml and getattr(ml, "trained", False)),
+                "feedback_samples": len(getattr(ml, "feedback_buffer", [])) if ml else 0,
+            },
         })
 
     def _handle_trades(self):
