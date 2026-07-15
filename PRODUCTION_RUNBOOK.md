@@ -31,6 +31,13 @@ ALLOW_LIVE_TRADING=true
 ```
 
 Leave `ENABLE_API_SERVER=false` unless you specifically need the local status API.
+If you need the dashboard, set:
+
+```env
+ENABLE_API_SERVER=true
+API_HOST=127.0.0.1
+API_PORT=8080
+```
 
 ## 3. Installation
 
@@ -42,6 +49,12 @@ If you want a desktop shortcut:
 
 ```powershell
 .\create_shortcut.ps1 -Desktop
+```
+
+If you want the bot to run without a visible terminal:
+
+```powershell
+.\run_background.ps1 -Mode live
 ```
 
 ## 4. Preflight before every live launch
@@ -112,6 +125,14 @@ If a new change behaves badly:
 2. Reinstall dependencies if the environment changed.
 3. Run preflight again.
 4. Resume in dry-run first.
+
+## 11. Dashboard mode toggle
+
+The local dashboard can switch between demo and live mode at runtime.
+
+- Live mode requires `ALLOW_LIVE_TRADING=true`
+- The dashboard should be bound to `127.0.0.1`
+- Treat the toggle as an operator convenience, not an excuse to skip preflight
 
 ## 10. Recommended operating rule
 

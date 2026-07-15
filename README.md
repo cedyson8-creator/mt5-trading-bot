@@ -62,6 +62,7 @@ Launchers:
 - Install: `.\install_pc.ps1` or `install_pc.bat`
 - Live: `.\run_live.ps1` or `run_live.bat`
 - Dry-run: `.\run_dry.ps1` or `run_dry.bat`
+- Background: `.\run_background.ps1 -Mode live` or `run_background.bat live`
 - Symbols only: `.\run_symbols.ps1` or `run_symbols.bat`
 
 Branding assets:
@@ -72,6 +73,7 @@ Branding assets:
 Production:
 
 - Read `PRODUCTION_RUNBOOK.md` before going live.
+- If you enable the API server, open `http://127.0.0.1:8080/` in a browser to use the dashboard and mode toggle.
 
 ## Symbol files
 
