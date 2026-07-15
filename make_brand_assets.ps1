@@ -155,6 +155,83 @@ function Draw-LineGraph {
     }
 }
 
+function Draw-BrandBadge {
+    param(
+        [System.Drawing.Graphics]$Graphics,
+        [int]$X,
+        [int]$Y,
+        [int]$Size,
+        [double]$Opacity = 1.0
+    )
+
+    $alpha = [int](255 * [Math]::Max(0.0, [Math]::Min(1.0, $Opacity)))
+    $outerBrush = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb([int]($alpha * 0.12), 79, 209, 197))
+    $innerBrush = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb([int]($alpha * 0.10), 255, 204, 122))
+    $linePen = New-Object System.Drawing.Pen ([System.Drawing.Color]::FromArgb([int]($alpha * 0.78), 119, 255, 188)), ([Math]::Max(3, [int]($Size / 42)))
+    $linePen.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
+    $linePen.EndCap = [System.Drawing.Drawing2D.LineCap]::Round
+    $linePen.LineJoin = [System.Drawing.Drawing2D.LineJoin]::Round
+    $ringPen = New-Object System.Drawing.Pen ([System.Drawing.Color]::FromArgb([int]($alpha * 0.60), 255, 255, 255)), ([Math]::Max(2, [int]($Size / 120)))
+    $brandFont = New-Object System.Drawing.Font("Segoe UI", [Math]::Max(28, [int]($Size * 0.18)), [System.Drawing.FontStyle]::Bold)
+    $subFont = New-Object System.Drawing.Font("Segoe UI", [Math]::Max(9, [int]($Size * 0.06)), [System.Drawing.FontStyle]::Regular)
+    $brandBrush = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb($alpha, 229, 238, 251))
+    $subBrush = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb([int]($alpha * 0.72), 159, 179, 200))
+    try {
+        $badgeRect = New-Object System.Drawing.Rectangle $X, $Y, $Size, $Size
+        $innerRect = New-Object System.Drawing.Rectangle ([int]($X + $Size * 0.12)), ([int]($Y + $Size * 0.12)), ([int]($Size * 0.76)), ([int]($Size * 0.76))
+        $Graphics.FillEllipse($outerBrush, $badgeRect)
+        $Graphics.FillEllipse($innerBrush, $innerRect)
+        $Graphics.DrawEllipse($ringPen, $badgeRect)
+
+        $linePoints = @(
+            (New-Object System.Drawing.Point ([int]($X + $Size * 0.18)), ([int]($Y + $Size * 0.67))),
+            (New-Object System.Drawing.Point ([int]($X + $Size * 0.30)), ([int]($Y + $Size * 0.58))),
+            (New-Object System.Drawing.Point ([int]($X + $Size * 0.42)), ([int]($Y + $Size * 0.39))),
+            (New-Object System.Drawing.Point ([int]($X + $Size * 0.56)), ([int]($Y + $Size * 0.48))),
+            (New-Object System.Drawing.Point ([int]($X + $Size * 0.71)), ([int]($Y + $Size * 0.28))),
+            (New-Object System.Drawing.Point ([int]($X + $Size * 0.84)), ([int]($Y + $Size * 0.34)))
+        )
+        $Graphics.DrawLines($linePen, $linePoints)
+
+        $barBrush = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb([int]($alpha * 0.88), 102, 233, 178))
+        $barBrush2 = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb([int]($alpha * 0.88), 255, 204, 122))
+        try {
+            $barW = [Math]::Max(6, [int]($Size * 0.10))
+            $barX = [int]($X + $Size * 0.28)
+            $gY = [int]($Y + $Size * 0.67)
+            $bars = @(
+                @{ X = $barX;               H = [int]($Size * 0.17); Bull = $true  },
+                @{ X = $barX + $barW * 2;   H = [int]($Size * 0.23); Bull = $false },
+                @{ X = $barX + $barW * 4;   H = [int]($Size * 0.14); Bull = $true  }
+            )
+            foreach ($bar in $bars) {
+                $brush = if ($bar.Bull) { $barBrush } else { $barBrush2 }
+                $Graphics.FillRectangle($brush, $bar.X, $gY - $bar.H, $barW, $bar.H)
+            }
+        } finally {
+            $barBrush.Dispose()
+            $barBrush2.Dispose()
+        }
+
+        $titleText = "MT5"
+        $subText = "TRADING BOT"
+        $titleSize = $Graphics.MeasureString($titleText, $brandFont)
+        $subSize = $Graphics.MeasureString($subText, $subFont)
+        $textY = [int]($Y + $Size * 0.78)
+        $Graphics.DrawString($titleText, $brandFont, $brandBrush, [int]($X + (($Size - $titleSize.Width) / 2)), [int]($Y + $Size * 0.52))
+        $Graphics.DrawString($subText, $subFont, $subBrush, [int]($X + (($Size - $subSize.Width) / 2)), $textY)
+    } finally {
+        $outerBrush.Dispose()
+        $innerBrush.Dispose()
+        $linePen.Dispose()
+        $ringPen.Dispose()
+        $brandFont.Dispose()
+        $subFont.Dispose()
+        $brandBrush.Dispose()
+        $subBrush.Dispose()
+    }
+}
+
 function New-Background {
     param(
         [int]$Width,
@@ -246,9 +323,15 @@ function New-Background {
             80
         )
         try {
-            $g.FillRectangle($frameBrush, 0, [int]($Height * 0.87), $Width, [int]($Height * 0.13))
+        $g.FillRectangle($frameBrush, 0, [int]($Height * 0.87), $Width, [int]($Height * 0.13))
         } finally {
             $frameBrush.Dispose()
+        }
+
+        if ($Width -ge $Height) {
+            Draw-BrandBadge -Graphics $g -X ([int]($Width * 0.70)) -Y ([int]($Height * 0.11)) -Size ([int]([Math]::Min($Width, $Height) * 0.19)) -Opacity 0.82
+        } else {
+            Draw-BrandBadge -Graphics $g -X ([int]($Width * 0.12)) -Y ([int]($Height * 0.06)) -Size ([int]([Math]::Min($Width, $Height) * 0.26)) -Opacity 0.82
         }
 
         $highlights = New-Object System.Drawing.Pen ([System.Drawing.Color]::FromArgb(45, 255, 255, 255)), 2
