@@ -584,6 +584,7 @@ class BotAPI(BaseHTTPRequestHandler):
         <pre id="flagsValue">—</pre>
         <div class="row space">
           <button class="ghost copy-btn" onclick="copyEnvTemplate()">Copy .env template</button>
+          <button class="ghost copy-btn" onclick="copyInstallCommand()">Copy install command</button>
         </div>
         <div class="copy-note">Copies the safe starter config with placeholders for your MT5 login, password, and broker server.</div>
         <div id="notice" class="notice"></div>
@@ -700,6 +701,10 @@ function getEnvTemplate() {
     "API_PORT=8080",
     "AUTO_RETRAIN_ENABLED=true",
   ].join("\n");
+}
+
+function getInstallCommand() {
+  return '& "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -ExecutionPolicy Bypass -File ".\\install_pc.ps1"';
 }
 
 function parseTradeJournal(tradesPayload) {
@@ -954,6 +959,28 @@ async function copyEnvTemplate() {
       document.body.removeChild(ta);
     }
     setNotice(".env template copied to clipboard.", "ok");
+  } catch (err) {
+    setNotice(`Copy failed: ${err.message || err}`, "bad");
+  }
+}
+
+async function copyInstallCommand() {
+  const text = getInstallCommand();
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    }
+    setNotice("Install command copied to clipboard.", "ok");
   } catch (err) {
     setNotice(`Copy failed: ${err.message || err}`, "bad");
   }
