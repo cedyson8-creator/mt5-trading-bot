@@ -2,6 +2,12 @@
 
 This is the clean deployment path for a fresh Windows PC.
 
+Use this with:
+
+1. `README.md`
+2. `FINAL_LIVE_CHECKLIST.md`
+3. `PRODUCTION_RUNBOOK.md`
+
 ## Option 1: Manual deployment
 
 1. Copy the repo to the target machine.

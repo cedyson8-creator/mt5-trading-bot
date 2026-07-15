@@ -7,6 +7,13 @@ Quick start:
 3. Run preflight.
 4. Start the bot.
 
+Read in this order:
+
+1. `README.md`
+2. `DEPLOYMENT_GUIDE.md`
+3. `FINAL_LIVE_CHECKLIST.md`
+4. `PRODUCTION_RUNBOOK.md`
+
 ## Environment
 
 ```env

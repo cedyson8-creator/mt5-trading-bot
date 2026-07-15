@@ -2,6 +2,12 @@
 
 This document is the operating procedure for a live deployment.
 
+Use this after:
+
+1. `README.md`
+2. `DEPLOYMENT_GUIDE.md`
+3. `FINAL_LIVE_CHECKLIST.md`
+
 ## 1. Preconditions
 
 - Use a dedicated MT5 account.
