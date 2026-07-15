@@ -160,6 +160,8 @@ If anything looks wrong:
 3. Verify open positions manually in MT5.
 4. Preserve logs and journal files for review.
 
+The dashboard emergency stop runs the same shutdown sequence from the browser.
+
 ## 9. Rollback
 
 If a new change behaves badly:
@@ -189,22 +191,11 @@ This project can run unattended after startup:
 
 Use this only after a stable demo burn-in and a small live pilot.
 
-## 12. Emergency stop
-
-The dashboard includes an emergency stop button. It:
-
-- writes the open-trades snapshot
-- stops the scheduler
-- disconnects MT5
-- requests process shutdown through the main loop
-
-Use it when you need to stop the bot immediately, then verify open positions directly in MT5.
-
-## 13. Recommended operating rule
+## 12. Recommended operating rule
 
 Treat this as a supervised trading system, not a fully unattended one. Keep a person responsible for checking it.
 
-## 14. Troubleshooting
+## 13. Troubleshooting
 
 If the bot will not start:
 

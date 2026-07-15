@@ -102,13 +102,10 @@ Branding assets:
 
 Production:
 
-- Read `PRODUCTION_RUNBOOK.md` before going live.
-- Read `DEPLOYMENT_GUIDE.md` for Windows setup and packaging.
-- Read `FINAL_LIVE_CHECKLIST.md` before the first live trade.
+- Read the deployment guide, checklist, and runbook in that order: `DEPLOYMENT_GUIDE.md`, `FINAL_LIVE_CHECKLIST.md`, `PRODUCTION_RUNBOOK.md`.
 - If you enable the API server, open `http://127.0.0.1:8080/` in a browser to use the dashboard and mode toggle.
-- The dashboard now includes live KPI tiles, a trade activity chart, and an emergency stop button.
-- For fully automatic startup and crash recovery, use the watchdog launcher and autostart shortcut.
-- The dashboard also has a Full Auto switch that creates or removes the Windows startup shortcut and keeps auto-retraining on or off.
+- The dashboard includes KPI tiles, a trade activity chart, an emergency stop button, and a Full Auto switch.
+- For automatic startup and crash recovery, use the watchdog launcher and autostart shortcut.
 
 ## Symbol files
 
